@@ -1,0 +1,3751 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quán Trà Sữa CPU - Bộ Điều Phối Lập Lịch FCFS & SJF</title>
+
+    <!-- ========================================================================== -->
+    <!-- 2. UI DESIGNER: TOÀN BỘ CSS PHONG CÁCH QUÁN TRÀ SỮA STITCH (NO EXTERNAL CSS)-->
+    <!-- ========================================================================== -->
+    <style>
+      :root {
+        --bg-cream: #fffdf9;
+        --bg-secondary: #f7f1e8;
+        --card-bg: #ffffff;
+        --stitch-blue: #2a75d3;
+        --stitch-dark-blue: #184d8c;
+        --stitch-light-blue: #ebf3fc;
+        --stitch-pink: #f8719d;
+        --milk-tea-brown: #5c381e;
+        --milk-tea-caramel: #e5a93c;
+        --tea-green: #3e885b;
+        --border-color: #eadbc8;
+        --text-main: #33261d;
+        --text-muted: #7a695c;
+        --shadow-sm: 0 2px 6px rgba(92, 56, 30, 0.06);
+        --shadow-md: 0 8px 20px rgba(92, 56, 30, 0.1);
+        --shadow-lg: 0 14px 30px rgba(92, 56, 30, 0.14);
+        --radius-sm: 8px;
+        --radius-md: 14px;
+        --radius-lg: 20px;
+        --font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-family);
+        background-color: var(--bg-cream);
+        color: var(--text-main);
+        line-height: 1.5;
+        padding: 24px 16px 48px;
+      }
+
+      .container {
+        max-width: 1160px;
+        margin: 0 auto;
+      }
+
+      /* HEADER */
+      header {
+        background: linear-gradient(
+          135deg,
+          #1a5499 0%,
+          #2a75d3 55%,
+          #4b90e2 100%
+        );
+        color: #ffffff;
+        padding: 28px 32px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      header::after {
+        content: "";
+        position: absolute;
+        right: -30px;
+        bottom: -40px;
+        width: 180px;
+        height: 180px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .header-content {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .mascot-avatar {
+        width: 80px;
+        height: 80px;
+        background: #ffffff;
+        border-radius: 50%;
+        padding: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mascot-avatar svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .header-title h1 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .header-badge {
+        background: var(--milk-tea-caramel);
+        color: var(--milk-tea-brown);
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .header-title p {
+        font-size: 14.5px;
+        opacity: 0.92;
+        font-weight: 400;
+      }
+
+      .header-stats {
+        background: rgba(255, 255, 255, 0.16);
+        padding: 12px 18px;
+        border-radius: var(--radius-md);
+        backdrop-filter: blur(8px);
+        text-align: right;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        flex-shrink: 0;
+      }
+
+      .header-stats .status-badge {
+        display: inline-block;
+        background: #10b981;
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-bottom: 4px;
+      }
+
+      /* GRID LAYOUT */
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      @media (max-width: 900px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .header-stats {
+          text-align: left;
+          width: 100%;
+        }
+      }
+
+      .card {
+        background: var(--card-bg);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px dashed var(--border-color);
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--milk-tea-brown);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .card-badge {
+        font-size: 12px;
+        background: var(--stitch-light-blue);
+        color: var(--stitch-dark-blue);
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 12px;
+      }
+
+      /* FORM STYLES */
+      .form-group-row {
+        display: grid;
+        grid-template-columns: 2fr 1.2fr 1.2fr auto;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 16px;
+      }
+
+      @media (max-width: 640px) {
+        .form-group-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .form-control {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-control label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+      }
+
+      .form-control input {
+        padding: 10px 12px;
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        color: var(--text-main);
+        background: #ffffff;
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+
+      .form-control input:focus {
+        outline: none;
+        border-color: var(--stitch-blue);
+        box-shadow: 0 0 0 3px rgba(42, 117, 211, 0.15);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: var(--radius-sm);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: inherit;
+      }
+
+      .btn:active {
+        transform: scale(0.97);
+      }
+
+      .btn-primary {
+        background: var(--stitch-blue);
+        color: #ffffff;
+      }
+
+      .btn-primary:hover {
+        background: var(--stitch-dark-blue);
+      }
+
+      .btn-secondary {
+        background: var(--bg-secondary);
+        color: var(--milk-tea-brown);
+        border: 1px solid var(--border-color);
+      }
+
+      .btn-secondary:hover {
+        background: #efe4d6;
+      }
+
+      .btn-sample {
+        background: #fff7ed;
+        color: #c2410c;
+        border: 1px solid #ffedd5;
+      }
+
+      .btn-sample:hover {
+        background: #ffedd5;
+      }
+
+      .btn-danger-outline {
+        background: transparent;
+        color: #ef4444;
+        border: 1px solid #fca5a5;
+        padding: 5px 10px;
+        font-size: 12px;
+        border-radius: 6px;
+      }
+
+      .btn-danger-outline:hover {
+        background: #fee2e2;
+      }
+
+      .actions-bar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border-color);
+      }
+
+    .self-test-results {
+      flex-basis: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: #F7F1E8;
+      color: var(--text-muted);
+      font-size: 12.5px;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+    .self-test-results.pass {
+      background: #ECFDF5;
+      color: #065F46;
+    }
+    .self-test-results.fail {
+      background: #FEF2F2;
+      color: #991B1B;
+    }
+
+      /* CUSTOMER QUEUE TABLE */
+      .table-container {
+        overflow-x: auto;
+        margin-top: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        text-align: left;
+      }
+
+      table th {
+        background: var(--bg-secondary);
+        color: var(--milk-tea-brown);
+        padding: 10px 12px;
+        font-weight: 700;
+        border-bottom: 1.5px solid var(--border-color);
+      }
+
+      table td {
+        padding: 11px 12px;
+        border-bottom: 1px solid #f0e6da;
+        vertical-align: middle;
+      }
+
+      table tr:last-child td {
+        border-bottom: none;
+      }
+
+      table tr:hover td {
+        background-color: #fdfaf5;
+      }
+
+      .customer-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+
+      .customer-bullet {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+      }
+
+      .queue-status-box {
+        margin-top: 12px;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .status-warning {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+      }
+
+      .status-ok {
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+
+      /* SCHEDULER CONTROLLER PANEL */
+      .scheduler-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .barista-desk {
+        background: linear-gradient(135deg, #faf5ef 0%, #f3eae0 100%);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 18px;
+        text-align: center;
+      }
+
+      .barista-desk h4 {
+        font-size: 15px;
+        color: var(--milk-tea-brown);
+        margin-bottom: 6px;
+      }
+
+      .barista-desk p {
+        font-size: 12.5px;
+        color: var(--text-muted);
+      }
+
+      .run-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .btn-run-fcfs {
+        background: linear-gradient(135deg, #e5a93c 0%, #d68f1f 100%);
+        color: #ffffff;
+        padding: 14px 12px;
+        font-size: 15px;
+        font-weight: 700;
+        border-radius: var(--radius-md);
+        box-shadow: 0 4px 10px rgba(229, 169, 60, 0.3);
+      }
+
+      .btn-run-fcfs:hover {
+        background: linear-gradient(135deg, #d68f1f 0%, #b87612 100%);
+      }
+
+      .btn-run-sjf {
+        background: linear-gradient(135deg, #2a75d3 0%, #1a5499 100%);
+        color: #ffffff;
+        padding: 14px 12px;
+        font-size: 15px;
+        font-weight: 700;
+        border-radius: var(--radius-md);
+        box-shadow: 0 4px 10px rgba(42, 117, 211, 0.3);
+      }
+
+      .btn-run-sjf:hover {
+        background: linear-gradient(135deg, #1a5499 0%, #113c70 100%);
+      }
+
+      /* GANTT CHART SECTION */
+      .gantt-section {
+        background: var(--card-bg);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+      }
+
+      .gantt-wrapper {
+        margin-top: 18px;
+        padding: 18px 12px 10px;
+        background: #faf8f5;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        overflow-x: auto;
+      }
+
+      .gantt-bar-container {
+        display: flex;
+        height: 64px;
+        min-width: 650px;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06);
+        border: 1.5px solid var(--border-color);
+        position: relative;
+      }
+
+      .gantt-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 13px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+        border-right: 1.5px solid #ffffff;
+        transition: all 0.3s ease;
+        position: relative;
+        cursor: default;
+        overflow: hidden;
+      }
+
+      .gantt-block:hover {
+        filter: brightness(1.08);
+        z-index: 2;
+      }
+
+      .gantt-block .block-name {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        padding: 0 6px;
+        max-width: 100%;
+      }
+
+      .gantt-block .block-time {
+        font-size: 11px;
+        opacity: 0.9;
+        font-weight: 500;
+      }
+
+      .gantt-idle-block {
+        background: repeating-linear-gradient(
+          45deg,
+          #e5e7eb,
+          #e5e7eb 10px,
+          #f3f4f6 10px,
+          #f3f4f6 20px
+        );
+        color: #6b7280;
+        text-shadow: none;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .gantt-timeline {
+        display: flex;
+        position: relative;
+        min-width: 650px;
+        height: 30px;
+        margin-top: 8px;
+      }
+
+      .gantt-time-mark {
+        position: absolute;
+        transform: translateX(-50%);
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--milk-tea-brown);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .gantt-time-mark::before {
+        content: "";
+        width: 1.5px;
+        height: 6px;
+        background: var(--milk-tea-brown);
+        margin-bottom: 2px;
+      }
+
+      /* RESULTS & STATS */
+      .results-grid {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 24px;
+      }
+
+      @media (max-width: 860px) {
+        .results-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .summary-card {
+        background: linear-gradient(135deg, #fffdf8 0%, #f5ecdd 100%);
+        border: 2px solid var(--milk-tea-caramel);
+        border-radius: var(--radius-md);
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .summary-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--milk-tea-brown);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .metric-hero {
+        text-align: center;
+        padding: 16px;
+        background: #ffffff;
+        border-radius: var(--radius-sm);
+        border: 1px solid #eadbc8;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .metric-hero .label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .metric-hero .value {
+        font-size: 36px;
+        font-weight: 900;
+        color: var(--stitch-blue);
+        line-height: 1.1;
+        margin: 6px 0;
+      }
+
+      .metric-hero .unit {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .formula-explanation {
+        background: #ffffff;
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        color: var(--milk-tea-brown);
+        border: 1px solid #eadbc8;
+        line-height: 1.6;
+      }
+
+      .formula-explanation code {
+        background: #f7ead7;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-weight: 700;
+        color: #92400e;
+      }
+
+      /* FOOTER */
+      footer {
+        margin-top: 36px;
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-muted);
+        padding-top: 16px;
+        border-top: 1px dashed var(--border-color);
+      }
+
+      .badge-algo {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .badge-fcfs {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .badge-sjf {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      /* ========================================================================== */
+      /* PHẦN 4: CSS CHO SO SÁNH FCFS & SJF (SIDE-BY-SIDE GANTT)                    */
+      /* ========================================================================== */
+      .comparison-section {
+        background: var(--card-bg);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+      }
+      .comparison-container {
+        display: flex;
+        gap: 24px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+      }
+      .comparison-column {
+        flex: 1;
+        min-width: 240px;
+        background: #faf8f5;
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        border: 1px solid var(--border-color);
+      }
+      .algo-header h4 {
+        margin: 0 0 4px 0;
+        font-size: 15px;
+        color: var(--text-main);
+      }
+      .algo-fcfs {
+        border-left: 4px solid var(--milk-tea-caramel);
+      }
+      .algo-sjf {
+        border-left: 4px solid var(--stitch-blue);
+      }
+      .order-badge {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+      }
+      .gantt-comparison-wrapper {
+        margin-top: 10px;
+        padding: 12px 8px 8px;
+        background: #ffffff;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border-color);
+        overflow-x: auto;
+      }
+      .gantt-comparison-wrapper .gantt-bar-container {
+        height: 48px;
+        min-width: 500px;
+        background: #ffffff;
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border-color);
+        position: relative;
+      }
+      .gantt-comparison-wrapper .gantt-block {
+        height: 48px;
+        font-size: 11.5px;
+        justify-content: center;
+        align-items: center;
+        color: #ffffff;
+        font-weight: 700;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+        border-right: 1.5px solid #ffffff;
+        position: relative;
+        overflow: hidden;
+      }
+      .gantt-comparison-wrapper .gantt-block .block-name {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        padding: 0 5px;
+      }
+      .gantt-comparison-wrapper .gantt-block .block-time {
+        font-size: 10px;
+        opacity: 0.9;
+      }
+      .gantt-comparison-wrapper .gantt-timeline {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 8px 0;
+        font-size: 10px;
+        color: var(--text-muted);
+      }
+      .customer-waiting-list {
+        margin-top: 12px;
+        font-size: 12.5px;
+        color: var(--text-main);
+      }
+      .customer-waiting-list .waiting-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px dashed #eadbc8;
+      }
+      .customer-waiting-list .waiting-item:last-child {
+        border-bottom: none;
+      }
+      .customer-waiting-list .wt-value {
+        font-weight: 700;
+        color: var(--stitch-blue);
+      }
+      .awt-box {
+        margin-top: 10px;
+        padding: 8px 10px;
+        background: #ffffff;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--milk-tea-brown);
+      }
+      .comparison-verdict {
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-radius: var(--radius-sm);
+        text-align: center;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .verdict-message {
+        margin-bottom: 6px;
+      }
+      .verdict-diff {
+        font-size: 12.5px;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+      .verdict-win-fcfs {
+        background: #fef3c7;
+        color: #b45309;
+        border: 1px solid #fcd34d;
+      }
+      .verdict-win-sjf {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #93c5fd;
+      }
+      .verdict-tie {
+        background: #e5e7eb;
+        color: #4b5563;
+        border: 1px solid #d1d5db;
+      }
+
+      @media (max-width: 768px) {
+        .comparison-container {
+          flex-direction: column;
+        }
+        .comparison-column {
+          min-width: auto;
+        }
+      }
+
+      /* ========================================================================== */
+      /* PHẦN 5: CSS CHO MÔ PHỎNG TỪNG BƯỚC                                          */
+      /* ========================================================================== */
+      .step-section {
+        background: var(--card-bg);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+      }
+      .step-controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+        align-items: center;
+      }
+      .btn-step {
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border-color);
+        background: #ffffff;
+        color: var(--text-main);
+        font-weight: 700;
+        font-size: 13.5px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-step:hover {
+        border-color: var(--stitch-blue);
+        color: var(--stitch-dark-blue);
+        background: var(--stitch-light-blue);
+      }
+      .btn-step:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        border-color: #e5e7eb;
+        color: #9ca3af;
+      }
+      .btn-step-next {
+        background: var(--stitch-blue);
+        color: #ffffff;
+        border-color: var(--stitch-dark-blue);
+      }
+      .btn-step-next:not(:disabled):hover {
+        background: var(--stitch-dark-blue);
+      }
+      .step-indicator {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--milk-tea-brown);
+        margin-left: auto;
+        margin-right: 16px;
+        white-space: nowrap;
+      }
+      .step-clock {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--stitch-dark-blue);
+        white-space: nowrap;
+      }
+      .step-explanation {
+        background: #fffdf8;
+        border: 1.5px solid var(--milk-tea-caramel);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 16px;
+      }
+      .explanation-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--milk-tea-brown);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #step-explanation-text {
+        font-size: 13.5px;
+        color: var(--text-main);
+        line-height: 1.6;
+        background: #ffffff;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        border-left: 4px solid var(--milk-tea-caramel);
+      }
+      .step-layout {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .step-queue {
+        flex: 1;
+        min-width: 200px;
+      }
+      .queue-title {
+        font-size: 12.5px;
+        font-weight: 800;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      #step-queue-list {
+        font-size: 13px;
+        color: var(--text-main);
+        background: #faf8f5;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px dashed var(--border-color);
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+      }
+      .step-gantt {
+        flex: 1.5;
+        min-width: 260px;
+      }
+      .step-gantt .gantt-bar-container {
+        height: 40px;
+        min-width: 300px;
+        border-radius: 6px;
+      }
+      .step-gantt .gantt-block {
+        height: 40px;
+        font-size: 11px;
+      }
+      .step-gantt .gantt-block .block-name {
+        padding: 0 4px;
+        font-size: 10.5px;
+      }
+      .step-gantt .gantt-block .block-time {
+        font-size: 9px;
+      }
+      .step-current-customer {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1.5px solid var(--stitch-blue);
+        border-radius: var(--radius-sm);
+        padding: 12px 16px;
+        margin-top: 8px;
+      }
+      #step-current-label {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: var(--stitch-dark-blue);
+        margin-bottom: 4px;
+      }
+
+      @media (max-width: 768px) {
+        .step-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .step-indicator {
+          margin-left: 0;
+          margin-right: 0;
+          margin-top: 8px;
+          text-align: center;
+        }
+        .step-clock {
+          margin-left: 0;
+          margin-top: 8px;
+          text-align: center;
+        }
+        .step-layout {
+          flex-direction: column;
+        }
+        .step-queue,
+        .step-gantt {
+          width: 100%;
+          min-width: 0;
+        }
+      }
+
+      /* ========================================================================== */
+      /* PHẦN 6: CSS CHO HOẠT ẢNH PHA TRÀ SỮA                                        */
+      /* ========================================================================== */
+      .animation-section {
+        background: var(--card-bg);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+      }
+      .anim-layout {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .anim-queue {
+        flex: 1;
+        min-width: 260px;
+      }
+      .queue-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .anim-queue-items {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .anim-queue-customer {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: #faf8f5;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+        font-size: 13px;
+        color: var(--text-main);
+        transition: all 0.2s ease;
+      }
+      .anim-queue-customer.waiting {
+        border-left: 4px solid var(--milk-tea-caramel);
+      }
+      .anim-queue-customer.serving {
+        border-left: 4px solid var(--stitch-blue);
+        background: #f0f9ff;
+        color: var(--stitch-dark-blue);
+        font-weight: 700;
+      }
+      .anim-queue-customer.done {
+        border-left: 4px solid var(--tea-green);
+        background: #f0fdf4;
+        color: var(--tea-green);
+        font-weight: 700;
+        opacity: 0.85;
+      }
+      .anim-queue-customer .customer-bullet {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .anim-queue-customer > span:nth-child(2) {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .anim-desk {
+        flex: 1.2;
+        min-width: 320px;
+        background: linear-gradient(135deg, #faf5ef 0%, #f3eae0 100%);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        text-align: center;
+      }
+      .desk-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--milk-tea-brown);
+        margin-bottom: 16px;
+      }
+      .anim-barista {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 20px;
+        background: #ffffff;
+        border-radius: var(--radius-lg);
+        border: 2px dashed var(--border-color);
+        margin-bottom: 16px;
+        min-height: 140px;
+      }
+      .barista-cup {
+        font-size: 48px;
+      }
+      .current-name {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+      .current-status {
+        font-size: 12.5px;
+        color: var(--text-muted);
+      }
+      .progress-container {
+        margin-top: 12px;
+      }
+      .progress-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+        text-align: left;
+      }
+      .progress-bar {
+        height: 10px;
+        background: #e5e7eb;
+        border-radius: 5px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          var(--stitch-blue),
+          var(--tea-green)
+        );
+        width: 0%;
+        transition: width 0.1s linear;
+      }
+      .progress-pct {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--stitch-dark-blue);
+        margin-top: 4px;
+      }
+      .anim-controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .btn-anim {
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        border: none;
+        background: var(--stitch-blue);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 13.5px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-anim:hover:not(:disabled) {
+        background: var(--stitch-dark-blue);
+        transform: translateY(-1px);
+      }
+      .btn-anim:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-anim-pause {
+        background: var(--milk-tea-caramel);
+      }
+      .btn-anim-pause:hover:not(:disabled) {
+        background: #d68f1f;
+      }
+      .btn-anim-resume {
+        background: var(--tea-green);
+      }
+      .btn-anim-resume:hover:not(:disabled) {
+        background: #2f6b47;
+      }
+      .btn-anim-reset {
+        background: var(--stitch-pink);
+      }
+      .btn-anim-reset:hover:not(:disabled) {
+        background: #e11d48;
+      }
+      .anim-speed {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .anim-speed select {
+        padding: 6px 10px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border-color);
+        background: #ffffff;
+        font-size: 13px;
+      }
+      .anim-message {
+        margin-top: 12px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--milk-tea-brown);
+        min-height: 20px;
+      }
+      .anim-message.success {
+        color: var(--tea-green);
+      }
+      .anim-message.info {
+        color: var(--stitch-dark-blue);
+      }
+
+      @media (max-width: 768px) {
+        .anim-layout {
+          flex-direction: column;
+        }
+        .anim-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .anim-queue,
+        .anim-desk {
+          width: 100%;
+          min-width: 0;
+        }
+        .anim-speed {
+          margin-left: 0;
+          margin-top: 10px;
+          justify-content: center;
+        }
+        .btn-anim {
+          width: 100%;
+        }
+      }
+
+      /* Tắt hoạt ảnh nếu người dùng chọn giảm chuyển động */
+      @media (prefers-reduced-motion: reduce) {
+        .progress-fill {
+          transition: none !important;
+        }
+        .anim-queue-customer {
+          transition: none !important;
+        }
+      }
+
+      /* TOAST NOTIFICATION */
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 12px 20px;
+        background: #1f2937;
+        color: #ffffff;
+        border-radius: var(--radius-sm);
+        font-size: 13.5px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 9999;
+      }
+      #toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- ========================================================================== -->
+      <!-- HEADER: LOGO QUÁN TRÀ SỮA CPU & MASCOT STITCH BARISTA                      -->
+      <!-- ========================================================================== -->
+      <header>
+        <div class="header-content">
+          <div class="mascot-avatar" title="Stitch Barista CPU">
+            <!-- Inline SVG Mascot Stitch & Boba Cup -->
+            <svg
+              viewBox="0 0 100 100"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <!-- Ears -->
+              <path
+                d="M15 45C5 25 2 10 20 8C35 7 32 30 25 45Z"
+                fill="#184D8C"
+              />
+              <path
+                d="M18 40C10 26 8 15 20 13C30 12 28 30 22 40Z"
+                fill="#F8719D"
+              />
+              <path
+                d="M85 45C95 25 98 10 80 8C65 7 68 30 75 45Z"
+                fill="#184D8C"
+              />
+              <path
+                d="M82 40C90 26 92 15 80 13C70 12 72 30 78 40Z"
+                fill="#F8719D"
+              />
+              <!-- Head -->
+              <ellipse cx="50" cy="50" rx="34" ry="28" fill="#2A75D3" />
+              <!-- Eyes -->
+              <ellipse cx="38" cy="46" rx="6.5" ry="9" fill="#0F172A" />
+              <ellipse cx="62" cy="46" rx="6.5" ry="9" fill="#0F172A" />
+              <circle cx="36" cy="43" r="2.5" fill="#FFFFFF" />
+              <circle cx="60" cy="43" r="2.5" fill="#FFFFFF" />
+              <!-- Nose & Mouth -->
+              <ellipse cx="50" cy="54" rx="7" ry="4.5" fill="#184D8C" />
+              <path
+                d="M42 61C46 65 54 65 58 61"
+                stroke="#0F172A"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              />
+              <!-- Boba Cup Held -->
+              <path
+                d="M38 68L40 92C40 94 42 96 45 96H55C58 96 60 94 60 92L62 68H38Z"
+                fill="#FDE68A"
+                stroke="#B45309"
+                stroke-width="1.5"
+              />
+              <!-- Straw -->
+              <line
+                x1="50"
+                y1="62"
+                x2="54"
+                y2="76"
+                stroke="#EF4444"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              />
+              <!-- Pearls -->
+              <circle cx="45" cy="88" r="2" fill="#451A03" />
+              <circle cx="50" cy="90" r="2" fill="#451A03" />
+              <circle cx="55" cy="88" r="2" fill="#451A03" />
+              <circle cx="48" cy="84" r="2" fill="#451A03" />
+            </svg>
+          </div>
+          <div class="header-title">
+            <h1>
+              QUÁN TRÀ SỮA CPU
+              <span class="header-badge">Stitch Edition</span>
+            </h1>
+            <p>
+              Hệ thống mô phỏng thuật toán điều phối CPU Đơn nhân (1 Barista):
+              FCFS & SJF Non-preemptive
+            </p>
+          </div>
+        </div>
+        <div class="header-stats">
+          <span class="status-badge">● SINGLE CORE CPU</span>
+          <div style="font-size: 13px; font-weight: 600">
+            1 Quầy Barista Phục Vụ
+          </div>
+          <div style="font-size: 11.5px; opacity: 0.85">
+            1 Khách Tại Một Thời Điểm
+          </div>
+        </div>
+      </header>
+
+      <!-- ========================================================================== -->
+      <!-- PHẦN 1: QUẦY ORDER & BẢNG ĐIỀU KHIỂN                                       -->
+      <!-- ========================================================================== -->
+      <div class="dashboard-grid">
+        <!-- CỘT TRÁI: FORM NHẬP KHÁCH & HÀNG ĐỢI -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+              Quầy Tiếp Nhận Khách Hàng
+            </div>
+            <span class="card-badge" id="queue-counter-badge">0 / 5 Khách</span>
+          </div>
+
+          <!-- FORM NHẬP -->
+          <form
+            id="customer-form"
+            onsubmit="
+              event.preventDefault();
+              addCustomer();
+            "
+          >
+            <div class="form-group-row">
+              <div class="form-control">
+                <label for="cust-name">Tên khách hàng</label>
+                <input
+                  type="text"
+                  id="cust-name"
+                  placeholder="VD: An Trân Châu..."
+                  required
+                  autocomplete="off"
+                />
+              </div>
+              <div class="form-control">
+                <label for="cust-bt">Pha chế (BT)</label>
+                <input
+                  type="number"
+                  id="cust-bt"
+                  min="1"
+                  max="50"
+                  placeholder="Số phút"
+                  required
+                />
+              </div>
+              <div class="form-control">
+                <label for="cust-at">Đến quán (AT)</label>
+                <input
+                  type="number"
+                  id="cust-at"
+                  min="0"
+                  max="50"
+                  value="0"
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="btn-add-customer"
+              >
+                + Thêm
+              </button>
+            </div>
+          </form>
+
+          <!-- HÀNG ĐỢI HIỆN TẠI -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Khách hàng</th>
+                  <th style="text-align: center">Thời gian đến (AT)</th>
+                  <th style="text-align: center">Pha chế (BT)</th>
+                  <th style="text-align: right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="queue-table-body">
+                <!-- Sẽ render động qua JavaScript -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="queue-status-alert" class="queue-status-box status-warning">
+            <span
+              >⚠️ Cần nhập <strong>từ 3 đến 5 khách hàng</strong> theo quy định
+              bài tập.</span
+            >
+          </div>
+
+          <div class="actions-bar">
+            <button
+              type="button"
+              class="btn btn-sample"
+              onclick="loadSampleData()"
+            >
+              ⚡ Nạp 4 khách hàng mẫu (Chuẩn Test)
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="clearQueue()"
+            >
+              🔄 Xóa trắng hàng đợi
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="runSelfTests()"
+            >
+              ✓ Kiểm tra thuật toán
+            </button>
+            <div id="self-test-results" class="self-test-results" role="status" aria-live="polite">
+              Chưa chạy kiểm tra thuật toán.
+            </div>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI: BÀN PHA CHẾ BARISTA & NÚT CHẠY THUẬT TOÁN -->
+        <div class="card scheduler-panel">
+          <div class="card-header">
+            <div class="card-title">
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              Bàn Điều Phối Barista CPU
+            </div>
+            <span class="card-badge">Non-preemptive</span>
+          </div>
+
+          <div class="barista-desk">
+            <h4>☕ Barista Stitch đang trực quầy</h4>
+            <p>
+              CPU chỉ phục vụ duy nhất một khách hàng tại một thời điểm. Sau khi
+              bắt đầu pha chế cho một khách, Barista sẽ pha xong hoàn toàn mới
+              nhận khách tiếp theo.
+            </p>
+          </div>
+
+          <div
+            style="
+              font-size: 13.5px;
+              font-weight: 700;
+              color: var(--milk-tea-brown);
+              margin-top: 4px;
+            "
+          >
+            Chọn thuật toán để bắt đầu lập lịch:
+          </div>
+
+          <div class="run-buttons">
+            <button
+              class="btn btn-run-fcfs"
+              id="btn-fcfs"
+              onclick="triggerAlgorithm('FCFS')"
+            >
+              ☕ Chạy FCFS
+              <span
+                style="
+                  font-size: 11.5px;
+                  display: block;
+                  font-weight: 400;
+                  opacity: 0.9;
+                "
+                >First Come, First Served</span
+              >
+            </button>
+            <button
+              class="btn btn-run-sjf"
+              id="btn-sjf"
+              onclick="triggerAlgorithm('SJF')"
+            >
+              ⚡ Chạy SJF
+              <span
+                style="
+                  font-size: 11.5px;
+                  display: block;
+                  font-weight: 400;
+                  opacity: 0.9;
+                "
+                >Shortest Job First</span
+              >
+            </button>
+          </div>
+
+          <div
+            style="
+              background: var(--bg-secondary);
+              padding: 12px 14px;
+              border-radius: var(--radius-sm);
+              font-size: 12.5px;
+              color: var(--text-muted);
+              border-left: 3px solid var(--stitch-blue);
+            "
+          >
+            💡 <strong>Quy tắc giải thuật:</strong><br />
+            • <strong>FCFS:</strong> Phục vụ theo thứ tự đến quán (AT nhỏ hơn
+            trước). Nếu cùng AT, giữ nguyên thứ tự nhập.<br />
+            • <strong>SJF:</strong> Tại thời điểm Barista rảnh, chỉ xét các
+            khách đã đến (AT ≤ thời điểm hiện tại) và chọn khách có BT nhỏ nhất.
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================== -->
+      <!-- PHẦN 2: BIỂU ĐỒ GANTT CHART TRỰC QUAN                                      -->
+      <!-- ========================================================================== -->
+      <div class="gantt-section">
+        <div class="card-header">
+          <div class="card-title">
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            Biểu Đồ Gantt Chart (Tiến Trình Pha Chế CPU)
+          </div>
+          <span id="current-algo-badge" class="badge-algo badge-fcfs"
+            >Chưa chạy thuật toán</span
+          >
+        </div>
+
+        <div
+          id="gantt-empty-state"
+          style="
+            text-align: center;
+            padding: 36px 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+          "
+        >
+          Vui lòng nhập 3–5 khách hàng rồi nhấn nút
+          <strong>Chạy FCFS</strong> hoặc <strong>Chạy SJF</strong> để xem biểu
+          đồ Gantt.
+        </div>
+
+        <div class="gantt-wrapper" id="gantt-wrapper" style="display: none">
+          <div class="gantt-bar-container" id="gantt-bar">
+            <!-- Render các khối Gantt block tại đây -->
+          </div>
+          <div class="gantt-timeline" id="gantt-timeline">
+            <!-- Render các mốc thời gian tại đây -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================== -->
+      <!-- PHẦN 3: BẢNG TÍNH THỜI GIAN CHỜ & CHỈ SỐ HIỆU NĂNG                          -->
+      <!-- ========================================================================== -->
+      <div class="results-grid" id="results-section" style="display: none">
+        <!-- BẢNG CHI TIẾT TỪNG KHÁCH -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                />
+              </svg>
+              Hóa Đơn Thời Gian Chi Tiết
+            </div>
+            <span class="card-badge">Bảng Thống Kê</span>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Khách hàng</th>
+                  <th style="text-align: center">Đến (AT)</th>
+                  <th style="text-align: center">Pha (BT)</th>
+                  <th style="text-align: center">Bắt đầu (ST)</th>
+                  <th style="text-align: center">Xong (CT)</th>
+                  <th style="text-align: center">Lưu (TAT)</th>
+                  <th
+                    style="
+                      text-align: center;
+                      color: var(--stitch-blue);
+                      font-weight: 800;
+                    "
+                  >
+                    Chờ (WT)
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="metrics-table-body">
+                <!-- Render kết quả tại đây -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- THẺ CHỈ SỐ KPI CHÍNH -->
+        <div class="summary-card">
+          <div class="summary-title">
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Chỉ Số Hiệu Năng CPU
+          </div>
+
+          <div class="metric-hero">
+            <div class="label">Thời Gian Chờ Trung Bình (AWT)</div>
+            <div class="value" id="val-awt">0.00</div>
+            <div class="unit">đơn vị thời gian / khách</div>
+          </div>
+
+          <div class="metric-hero" style="background: #f8f9fa">
+            <div class="label">Thời Gian Lưu Quán TB (ATAT)</div>
+            <div
+              class="value"
+              id="val-atat"
+              style="font-size: 26px; color: var(--milk-tea-brown)"
+            >
+              0.00
+            </div>
+            <div class="unit">đơn vị thời gian / khách</div>
+          </div>
+
+          <div class="formula-explanation" id="formula-detail">
+            <!-- Hiển thị công thức tính tổng cụ thể -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================== -->
+      <!-- PHẦN 4: SO SÁNH FCFS & SJF (SIDE-BY-SIDE GANTT)                              -->
+      <!-- ========================================================================== -->
+      <section
+        id="comparison-section"
+        class="comparison-section"
+        style="display: none"
+      >
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 6.253v13m0-13C10.832 8.068 9.246 9.141 7.5 10.5c-1.64 1.305-3.163 2.925-4.304 4.764a18.289 18.289 0 00-.675 3.043c0 2.801.725 5.39 1.838 7.593 1.375 2.709 3.67 4.492 6.474 4.983a18.289 18.289 0 004.723-.146c2.206-.39 4.41-1.099 6.201-2.429a18.289 18.289 0 002.432-2.523c1.002-1.563 1.634-3.362 1.906-5.196.191-1.284.284-2.611.284-4.024 0-2.652-.635-5.12-1.62-7.364C14.932 7.647 13.41 6.253 12 6.253z"
+                />
+              </svg>
+              So Sánh Thuật Toán FCFS & SJF
+            </div>
+            <span class="card-badge">Biểu đồ Gantt song song</span>
+          </div>
+          <div class="comparison-container">
+            <!-- Cột FCFS -->
+            <div class="comparison-column">
+              <div class="algo-header algo-fcfs">
+                <h4>☕ FCFS (First Come, First Served)</h4>
+                <p style="font-size: 12px; opacity: 0.9">
+                  Phục vụ theo thứ tự đến quán
+                </p>
+              </div>
+              <div class="order-badge">
+                Thứ tự: <span id="cmp-fcfs-order">-</span>
+              </div>
+              <div class="gantt-comparison-wrapper" id="cmp-gantt-fcfs-wrapper">
+                <div class="gantt-bar-container" id="cmp-gantt-bar-fcfs"></div>
+                <div class="gantt-timeline" id="cmp-gantt-timeline-fcfs"></div>
+              </div>
+              <div class="customer-waiting-list" id="cmp-fcfs-waiting"></div>
+              <div class="awt-box">
+                <strong>AWT (FCFS):</strong> <span id="cmp-fcfs-awt">0.00</span>
+              </div>
+            </div>
+            <!-- Cột SJF -->
+            <div class="comparison-column">
+              <div class="algo-header algo-sjf">
+                <h4>⚡ SJF (Shortest Job First)</h4>
+                <p style="font-size: 12px; opacity: 0.9">
+                  Chọn khách pha nhanh nhất khi Barista rảnh
+                </p>
+              </div>
+              <div class="order-badge">
+                Thứ tự: <span id="cmp-sjf-order">-</span>
+              </div>
+              <div class="gantt-comparison-wrapper" id="cmp-gantt-sjf-wrapper">
+                <div class="gantt-bar-container" id="cmp-gantt-bar-sjf"></div>
+                <div class="gantt-timeline" id="cmp-gantt-timeline-sjf"></div>
+              </div>
+              <div class="customer-waiting-list" id="cmp-sjf-waiting"></div>
+              <div class="awt-box">
+                <strong>AWT (SJF):</strong> <span id="cmp-sjf-awt">0.00</span>
+              </div>
+            </div>
+          </div>
+          <div class="comparison-verdict">
+            <div id="cmp-verdict-message" class="verdict-message"></div>
+            <div id="cmp-verdiff" class="verdict-diff"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================== -->
+      <!-- PHẦN 5: MÔ PHỎNG TỪNG BƯỚC (STEP-BY-STEP SIMULATION)                        -->
+      <!-- ========================================================================== -->
+      <section id="step-section" class="step-section" style="display: none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              Mô Phỏng Từng Bước (CPU Ra Quyết Định)
+            </div>
+            <span class="card-badge">Giải thích thuật toán</span>
+          </div>
+
+          <!-- Điều khiển bước -->
+          <div class="step-controls">
+            <button
+              class="btn btn-step"
+              id="btn-step-first"
+              onclick="stepFirst()"
+            >
+              ⏮ Về bước đầu
+            </button>
+            <button
+              class="btn btn-step"
+              id="btn-step-prev"
+              onclick="stepPrev()"
+            >
+              ⏮ Bước trước
+            </button>
+            <button
+              class="btn btn-step btn-step-next"
+              id="btn-step-next"
+              onclick="stepNext()"
+            >
+              Bước tiếp theo ⏭
+            </button>
+            <div class="step-indicator">
+              Bước <span id="step-current">0</span> /
+              <span id="step-total">0</span>
+            </div>
+            <div class="step-clock">
+              Thời gian CPU: <span id="step-clock-value">0</span>
+            </div>
+          </div>
+
+          <!-- Giải thích -->
+          <div class="step-explanation">
+            <div class="explanation-title">💡 Giải thích:</div>
+            <div id="step-explanation-text">
+              Chọn thuật toán (FCFS hoặc SJF) rồi bấm "Bước tiếp theo" để bắt
+              đầu.
+            </div>
+          </div>
+
+          <!-- Hàng đợi & Gantt nhỏ -->
+          <div class="step-layout">
+            <div class="step-queue">
+              <div class="queue-title">📋 Hàng đợi còn lại:</div>
+              <div id="step-queue-list">--</div>
+            </div>
+            <div class="step-gantt">
+              <div class="gantt-comparison-wrapper">
+                <div class="gantt-bar-container" id="step-gantt-bar"></div>
+                <div class="gantt-timeline" id="step-gantt-timeline"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Khách hiện tại được chọn -->
+          <div class="step-current-customer">
+            <div id="step-current-label">
+              Khách được CPU chọn: <span id="step-current-name">--</span>
+            </div>
+            <div
+              id="step-current-detail"
+              style="font-size: 12.5px; color: var(--text-muted)"
+            ></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================== -->
+      <!-- PHẦN 6: HOẠT ẢNH PHA TRÀ SỮA (CPU ANIMATION SIMULATION)                      -->
+      <!-- ========================================================================== -->
+      <section
+        id="animation-section"
+        class="animation-section"
+        style="display: none"
+      >
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              Hoạt Ảnh Pha Trà Sữa (CPU Đang Làm Việc)
+            </div>
+            <span class="card-badge">Mô phỏng trực quan</span>
+          </div>
+
+          <!-- Khu vực mô phỏng -->
+          <div class="anim-layout">
+            <!-- Cột trái: Hàng đợi -->
+            <div class="anim-queue">
+              <div class="queue-title">👥 Hàng Đợi Khách Hàng</div>
+              <div id="anim-queue-list" class="anim-queue-items"></div>
+            </div>
+
+            <!-- Cột phải: Quầy pha chế -->
+            <div class="anim-desk">
+              <div class="desk-title">☕ Quầy Pha Chế (CPU)</div>
+              <div class="anim-barista" id="anim-barista">
+                <div class="barista-cup">🥤</div>
+                <div id="anim-current-name" class="current-name">--</div>
+                <div id="anim-current-status" class="current-status">
+                  Đang chờ bắt đầu
+                </div>
+              </div>
+              <div class="progress-container">
+                <div class="progress-label">Tiến độ pha chế:</div>
+                <div class="progress-bar">
+                  <div id="anim-progress-fill" class="progress-fill"></div>
+                </div>
+                <div id="anim-progress-pct" class="progress-pct">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Điều khiển hoạt ảnh -->
+          <div class="anim-controls">
+            <button
+              class="btn btn-anim"
+              id="btn-anim-start"
+              onclick="startAnimation()"
+            >
+              ▶ Bắt đầu mô phỏng
+            </button>
+            <button
+              class="btn btn-anim btn-anim-pause"
+              id="btn-anim-pause"
+              onclick="pauseAnimation()"
+              disabled
+            >
+              ⏸ Tạm dừng
+            </button>
+            <button
+              class="btn btn-anim btn-anim-resume"
+              id="btn-anim-resume"
+              onclick="resumeAnimation()"
+              disabled
+            >
+              ▶ Tiếp tục
+            </button>
+            <button
+              class="btn btn-anim btn-anim-reset"
+              id="btn-anim-reset"
+              onclick="resetAnimation()"
+            >
+              🔄 Đặt lại
+            </button>
+
+            <div class="anim-speed">
+              <label for="anim-speed">Tốc độ:</label>
+              <select id="anim-speed" onchange="setSpeed(this.value)">
+                <option value="0.5">0.5x</option>
+                <option value="1" selected>1x</option>
+                <option value="2">2x</option>
+                <option value="4">4x</option>
+              </select>
+            </div>
+
+            <div id="anim-message" class="anim-message"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer>
+        Quán Trà Sữa CPU • Bài Tập Mô Phỏng Lập Lịch FCFS & SJF Non-preemptive •
+        100% Chạy Độc Lập
+      </footer>
+    </div>
+
+    <!-- TOAST THÔNG BÁO -->
+    <div id="toast">Thông báo hệ thống</div>
+
+    <!-- ========================================================================== -->
+    <!-- 3 & 4. ALGORITHM & INTEGRATION DEV: TOÀN BỘ JAVASCRIPT THUẦN (VANILLA JS) -->
+    <!-- ========================================================================== -->
+    <script>
+      (function () {
+        "use strict";
+
+        // --------------------------------------------------------------------------
+        // DỮ LIỆU & BẢNG MÀU DÀNH CHO CÁC KHÁCH HÀNG (THEME TRÀ SỮA)
+        // --------------------------------------------------------------------------
+        const CUSTOMER_PALETTE = [
+          { bg: "#3B82F6", text: "#FFFFFF", name: "Trà Sữa Oolong" }, // Xanh Stitch
+          { bg: "#EC4899", text: "#FFFFFF", name: "Dâu Tây Kem Cheese" }, // Hồng Berry
+          { bg: "#10B981", text: "#FFFFFF", name: "Matcha Trân Châu" }, // Xanh Trà
+          { bg: "#F59E0B", text: "#FFFFFF", name: "Trà Đào Cam Sả" }, // Vàng Cam
+          { bg: "#8B5CF6", text: "#FFFFFF", name: "Khoai Môn Boba" }, // Tím Taro
+        ];
+
+        // STATE CỦA ỨNG DỤNG
+        let customers = [];
+        let nextId = 1;
+
+        // --------------------------------------------------------------------------
+        // 1. VALIDATION: KIỂM TRA DỮ LIỆU NHẬP VÀO TRƯỚC KHI CHẠY THUẬT TOÁN
+        // --------------------------------------------------------------------------
+        /**
+         * validateCustomers(custList)
+         * Kiểm tra danh sách khách hàng có hợp lệ để chạy thuật toán hay không.
+         * Quy tắc:
+         *   • Phải có từ 3 đến 5 khách hàng.
+         *   • Tên khách không được để trống.
+         *   • BT (thời gian pha chế) phải là số nguyên dương (> 0).
+         *   • AT (thời gian đến quán) phải là số nguyên >= 0.
+         * Trả về đối tượng { ok: true/false, message: '...' }.
+         * Hàm này đảm bảo ứng dụng không giả định dữ liệu nhập luôn hợp lệ.
+         */
+        function validateCustomers(custList) {
+          if (!custList || !Array.isArray(custList)) {
+            return {
+              ok: false,
+              message: "Danh sách khách hàng không tồn tại!",
+            };
+          }
+          if (custList.length < 3 || custList.length > 5) {
+            return {
+              ok: false,
+              message: `Vui lòng nhập từ 3 đến 5 khách hàng (Hiện có: ${custList.length})!`,
+            };
+          }
+          for (let i = 0; i < custList.length; i++) {
+            const c = custList[i];
+            if (!c.name || !c.name.trim()) {
+              return {
+                ok: false,
+                message: `Khách hàng thứ ${i + 1} chưa nhập tên!`,
+              };
+            }
+            if (
+              typeof c.bt !== "number" ||
+              !Number.isInteger(c.bt) ||
+              c.bt <= 0
+            ) {
+              return {
+                ok: false,
+                message: `Thời gian pha chế (BT) của "${c.name}" phải là số nguyên dương (> 0)!`,
+              };
+            }
+            if (
+              typeof c.at !== "number" ||
+              !Number.isInteger(c.at) ||
+              c.at < 0
+            ) {
+              return {
+                ok: false,
+                message: `Thời gian đến (AT) của "${c.name}" phải là số nguyên >= 0!`,
+              };
+            }
+          }
+          return { ok: true, message: "Dữ liệu hợp lệ." };
+        }
+
+        // --------------------------------------------------------------------------
+        // 2. HÀM TÍNH TOÁN THỜI GIAN CHỜ (DÙNG CHUNG CHO CẢ HAI THUẬT TOÁN)
+        // --------------------------------------------------------------------------
+        /**
+         * calculateWaitingTimes(at, bt, startTime)
+         * Tính toán các chỉ số thời gian cho một khách hàng:
+         *   ST (Start Time / Bắt đầu) = startTime
+         *   CT (Completion Time / Kết thúc) = startTime + bt
+         *   TAT (Turnaround Time / Lưu quán) = CT - AT
+         *   WT (Waiting Time / Thời gian chờ) = TAT - BT = ST - AT
+         * Trả về đối tượng { st, ct, tat, wt }.
+         * Hàm này tránh lặp mã và giúp người mới học dễ dàng theo dõi công thức.
+         */
+        function calculateWaitingTimes(at, bt, startTime) {
+          const st = startTime;
+          const ct = st + bt;
+          const tat = ct - at;
+          const wt = tat - bt; // tương đương st - at
+          return { st, ct, tat, wt };
+        }
+
+        // --------------------------------------------------------------------------
+        // 3. ALGORITHM DEVELOPER: THUẬT TOÁN FCFS & SJF NON-PREEMPTIVE PURE FUNCTIONS
+        // --------------------------------------------------------------------------
+
+        /**
+         * Thuật toán FCFS (First Come, First Served)
+         * Khách nào đến trước phục vụ trước.
+         */
+        function runFCFS(custList) {
+          if (!custList || custList.length === 0) return null;
+
+          // FCFS: phục vụ theo thứ tự đến quán (AT tăng dần).
+          // Cùng AT thì giữ nguyên thứ tự nhập (originalIndex).
+          const list = custList
+            .map((c, index) => ({ ...c, originalIndex: index }))
+            .sort((a, b) =>
+              a.at !== b.at ? a.at - b.at : a.originalIndex - b.originalIndex,
+            );
+
+          let currentTime = 0;
+          const scheduleBlocks = [];
+          const results = [];
+
+          for (let i = 0; i < list.length; i++) {
+            const cust = list[i];
+
+            // Nếu khách chưa đến -> Barista rảnh đến khi khách đến
+            if (currentTime < cust.at) {
+              scheduleBlocks.push({
+                isIdle: true,
+                startTime: currentTime,
+                endTime: cust.at,
+                duration: cust.at - currentTime,
+                name: "CPU Rảnh (Idle)",
+              });
+              currentTime = cust.at;
+            }
+
+            // Dùng AT thật của khách để tính ST, CT, TAT, WT
+            const arrivalTime = cust.at;
+            const timing = calculateWaitingTimes(
+              arrivalTime,
+              cust.bt,
+              currentTime,
+            );
+            const startTime = timing.st;
+            const completionTime = timing.ct;
+            const turnaroundTime = timing.tat;
+            const waitingTime = timing.wt; // = st - at
+
+            scheduleBlocks.push({
+              isIdle: false,
+              id: cust.id,
+              name: cust.name,
+              color: cust.color,
+              startTime: startTime,
+              endTime: completionTime,
+              duration: cust.bt,
+            });
+
+            results.push({
+              id: cust.id,
+              name: cust.name,
+              color: cust.color,
+              at: arrivalTime,
+              bt: cust.bt,
+              st: startTime,
+              ct: completionTime,
+              tat: turnaroundTime,
+              wt: waitingTime,
+            });
+
+            currentTime = completionTime;
+          }
+
+          const totalWT = results.reduce((sum, r) => sum + r.wt, 0);
+          const totalTAT = results.reduce((sum, r) => sum + r.tat, 0);
+          const awt = totalWT / results.length;
+          const atat = totalTAT / results.length;
+
+          return {
+            algorithm: "FCFS",
+            name: "First Come, First Served",
+            scheduleBlocks: scheduleBlocks,
+            results: results,
+            totalTime: currentTime,
+            totalWT: totalWT,
+            awt: awt,
+            totalTAT: totalTAT,
+            atat: atat,
+          };
+        }
+
+        /**
+         * Thuật toán SJF Non-preemptive (Shortest Job First)
+         * Khi Barista rảnh, chọn khách có BT nhỏ nhất trong số các khách đã đến.
+         */
+        function runSJF(custList) {
+          if (!custList || custList.length === 0) return null;
+
+          const unserved = custList.map((c, index) => ({
+            ...c,
+            originalIndex: index,
+          }));
+          let currentTime = 0;
+          const scheduleBlocks = [];
+          const results = [];
+
+          while (unserved.length > 0) {
+            // Lọc danh sách những khách đã đến quán tại thời điểm currentTime
+            const available = unserved.filter((c) => c.at <= currentTime);
+
+            if (available.length === 0) {
+              // Không có khách nào tại currentTime -> CPU Rảnh đến thời điểm khách kế tiếp đến
+              let nextArrivalTime = Math.min(...unserved.map((c) => c.at));
+              scheduleBlocks.push({
+                isIdle: true,
+                startTime: currentTime,
+                endTime: nextArrivalTime,
+                duration: nextArrivalTime - currentTime,
+                name: "CPU Rảnh (Idle)",
+              });
+              currentTime = nextArrivalTime;
+              continue;
+            }
+
+            // Trong số các khách đã đến, chọn khách có Burst Time (BT) nhỏ nhất.
+            // Nếu BT bằng nhau, giữ thứ tự ban đầu trong danh sách.
+            available.sort((a, b) => {
+              if (a.bt !== b.bt) return a.bt - b.bt;
+              return a.originalIndex - b.originalIndex;
+            });
+
+            const chosen = available[0];
+            // Tính toán các chỉ số thời gian qua hàm chung, giúp người mới học dễ theo dõi công thức
+            const timing = calculateWaitingTimes(
+              chosen.at,
+              chosen.bt,
+              currentTime,
+            );
+            const startTime = timing.st;
+            const completionTime = timing.ct;
+            const turnaroundTime = timing.tat;
+            const waitingTime = timing.wt; // = st - at
+
+            scheduleBlocks.push({
+              isIdle: false,
+              id: chosen.id,
+              name: chosen.name,
+              color: chosen.color,
+              startTime: startTime,
+              endTime: completionTime,
+              duration: chosen.bt,
+            });
+
+            results.push({
+              id: chosen.id,
+              name: chosen.name,
+              color: chosen.color,
+              at: chosen.at,
+              bt: chosen.bt,
+              st: startTime,
+              ct: completionTime,
+              tat: turnaroundTime,
+              wt: waitingTime,
+            });
+
+            currentTime = completionTime;
+
+            // Xóa đúng phần tử đã chọn khỏi danh sách unserved.
+            unserved.splice(unserved.indexOf(chosen), 1);
+          }
+
+          const totalWT = results.reduce((sum, r) => sum + r.wt, 0);
+          const totalTAT = results.reduce((sum, r) => sum + r.tat, 0);
+          const awt = totalWT / results.length;
+          const atat = totalTAT / results.length;
+
+          return {
+            algorithm: "SJF",
+            name: "Shortest Job First (Non-preemptive)",
+            scheduleBlocks: scheduleBlocks,
+            results: results,
+            totalTime: currentTime,
+            totalWT: totalWT,
+            awt: awt,
+            totalTAT: totalTAT,
+            atat: atat,
+          };
+        }
+
+        // --------------------------------------------------------------------------
+        // 4. INTEGRATION DEVELOPER: DOM BINDING, RENDER GANTT & CONTROLLER
+        // --------------------------------------------------------------------------
+
+        function showToast(message) {
+          const toast = document.getElementById("toast");
+          toast.textContent = message;
+          toast.classList.add("show");
+          setTimeout(() => {
+            toast.classList.remove("show");
+          }, 2800);
+        }
+
+        // Ẩn Gantt/bảng kết quả cũ khi dữ liệu đầu vào đã thay đổi (tránh hiển thị kết quả lỗi thời)
+        function resetResults() {
+          selectedSimPlan = null;
+          document.getElementById("gantt-empty-state").style.display = "block";
+          document.getElementById("gantt-wrapper").style.display = "none";
+          document.getElementById("results-section").style.display = "none";
+          const badge = document.getElementById("current-algo-badge");
+          badge.className = "badge-algo badge-fcfs";
+          badge.textContent = "Chưa chạy thuật toán";
+          resetComparison();
+          resetStepSimulation();
+          resetAnimation();
+        }
+
+        // Chọn màu chưa được dùng để không trùng màu sau khi xóa khách
+        function pickColor() {
+          const used = customers.map((c) => c.color);
+          const free = CUSTOMER_PALETTE.find((p) => !used.includes(p.bg));
+          return (
+            free || CUSTOMER_PALETTE[customers.length % CUSTOMER_PALETTE.length]
+          ).bg;
+        }
+
+        // Chỉ thêm ID vào nhãn khi có tên trùng; tên gốc luôn được giữ nguyên.
+        function getCustomerDisplayName(customer, customerList = customers) {
+          if (!customer) return "";
+          const normalizedName = customer.name.trim().toLowerCase();
+          const duplicates = customerList.filter(
+            (candidate) => candidate.name.trim().toLowerCase() === normalizedName,
+          );
+          return duplicates.length > 1
+            ? `${customer.name} (#${customer.id})`
+            : customer.name;
+        }
+
+        function updateQueueUI() {
+          const tbody = document.getElementById("queue-table-body");
+          const badge = document.getElementById("queue-counter-badge");
+          const alertBox = document.getElementById("queue-status-alert");
+          const addBtn = document.getElementById("btn-add-customer");
+
+          badge.textContent = `${customers.length} / 5 Khách`;
+
+          if (customers.length < 3) {
+            alertBox.className = "queue-status-box status-warning";
+            alertBox.innerHTML = `<span>⚠️ Quán hiện có <strong>${customers.length}</strong> khách. Vui lòng thêm ít nhất <strong>${3 - customers.length}</strong> khách nữa để chạy thuật toán (yêu cầu 3–5 khách).</span>`;
+          } else if (customers.length <= 5) {
+            alertBox.className = "queue-status-box status-ok";
+            alertBox.innerHTML = `<span>✅ Đã đạt yêu cầu hợp lệ (<strong>${customers.length} khách</strong>). Bạn có thể bấm nút chạy <strong>FCFS</strong> hoặc <strong>SJF</strong> ngay.</span>`;
+          }
+
+          // Khống chế tối đa 5 khách
+          if (customers.length >= 5) {
+            addBtn.disabled = true;
+            addBtn.style.opacity = "0.5";
+            addBtn.style.cursor = "not-allowed";
+          } else {
+            addBtn.disabled = false;
+            addBtn.style.opacity = "1";
+            addBtn.style.cursor = "pointer";
+          }
+
+          if (customers.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 20px;">Hàng đợi đang trống. Hãy thêm khách hoặc bấm "Nạp 4 khách mẫu".</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = customers
+            .map(
+              (c, idx) => `
+          <tr>
+            <td>
+              <div class="customer-tag">
+                <span class="customer-bullet" style="background-color: ${c.color};"></span>
+                <span>${escapeHtml(getCustomerDisplayName(c))}</span>
+              </div>
+            </td>
+            <td style="text-align: center; font-weight: 600;">${c.at}</td>
+            <td style="text-align: center; font-weight: 600;">${c.bt}</td>
+            <td style="text-align: right;">
+              <button class="btn-danger-outline" onclick="deleteCustomer(${c.id})">Xóa</button>
+            </td>
+          </tr>
+        `,
+            )
+            .join("");
+        }
+
+        function escapeHtml(str) {
+          return str.replace(
+            /[&<>'"]/g,
+            (tag) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "'": "&#39;",
+                '"': "&quot;",
+              })[tag] || tag,
+          );
+        }
+
+        window.addCustomer = function () {
+          if (customers.length >= 5) {
+            showToast("Quán chỉ phục vụ tối đa 5 khách hàng theo quy định!");
+            return;
+          }
+
+          const nameInput = document.getElementById("cust-name");
+          const btInput = document.getElementById("cust-bt");
+          const atInput = document.getElementById("cust-at");
+
+          const name = nameInput.value.trim();
+          const bt = Number(btInput.value);
+          const at = Number(atInput.value);
+
+          if (!name) {
+            showToast("Vui lòng nhập tên khách hàng!");
+            return;
+          }
+          if (btInput.value === "" || !Number.isInteger(bt) || bt <= 0) {
+            showToast("Thời gian pha chế (BT) phải là số nguyên dương (> 0)!");
+            return;
+          }
+          if (atInput.value === "" || !Number.isInteger(at) || at < 0) {
+            showToast(
+              "Thời gian đến quán (AT) phải là số nguyên từ 0 trở lên!",
+            );
+            return;
+          }
+
+          customers.push({
+            id: nextId++,
+            name: name,
+            bt: bt,
+            at: at,
+            color: pickColor(),
+          });
+
+          // Reset inputs
+          nameInput.value = "";
+          btInput.value = "";
+          atInput.value = "0";
+          nameInput.focus();
+
+          resetResults();
+          updateQueueUI();
+          showToast(`Đã thêm khách hàng: ${name}`);
+        };
+
+        window.deleteCustomer = function (id) {
+          customers = customers.filter((c) => c.id !== id);
+          resetResults();
+          updateQueueUI();
+          showToast("Đã xóa khách khỏi hàng đợi.");
+        };
+
+        window.clearQueue = function () {
+          customers = [];
+          resetResults();
+          updateQueueUI();
+          showToast("Đã làm mới danh sách hàng đợi.");
+        };
+
+        window.loadSampleData = function () {
+          // Nạp bộ dữ liệu 4 khách hàng theo đúng chuẩn kiểm thử của đồ án
+          customers = [
+            {
+              id: nextId++,
+              name: "An (Trà sữa Trân châu)",
+              bt: 6,
+              at: 0,
+              color: CUSTOMER_PALETTE[0].bg,
+            },
+            {
+              id: nextId++,
+              name: "Bình (Hồng trà Kem cheese)",
+              bt: 2,
+              at: 1,
+              color: CUSTOMER_PALETTE[1].bg,
+            },
+            {
+              id: nextId++,
+              name: "Chi (Trà đào Cam sả)",
+              bt: 8,
+              at: 2,
+              color: CUSTOMER_PALETTE[2].bg,
+            },
+            {
+              id: nextId++,
+              name: "Dũng (Matcha Latte)",
+              bt: 3,
+              at: 3,
+              color: CUSTOMER_PALETTE[3].bg,
+            },
+          ];
+          resetResults();
+          updateQueueUI();
+          showToast("Đã nạp 4 khách hàng kiểm thử chuẩn!");
+        };
+
+        window.triggerAlgorithm = function (algoType) {
+          // Bước 1: Validate dữ liệu đầu vào trước khi chạy thuật toán.
+          // Không giả định rằng dữ liệu nhập luôn hợp lệ.
+          const validation = validateCustomers(customers);
+          if (!validation.ok) {
+            showToast("Lỗi: " + validation.message);
+            return;
+          }
+
+          // Hủy mọi phiên cũ trước khi chọn và dựng lịch mới.
+          resetAnimation();
+          resetStepSimulation();
+          simMode = "none";
+
+          let plan;
+          const algoBadge = document.getElementById("current-algo-badge");
+
+          if (algoType === "FCFS") {
+            plan = runFCFS(customers);
+            algoBadge.className = "badge-algo badge-fcfs";
+            algoBadge.textContent =
+              "Thuật toán: FCFS (First Come, First Served)";
+          } else {
+            plan = runSJF(customers);
+            algoBadge.className = "badge-algo badge-sjf";
+            algoBadge.textContent =
+              "Thuật toán: SJF (Shortest Job First - Non-preemptive)";
+          }
+
+          selectedSimPlan = buildPlan(customers, algoType, plan);
+
+          renderGanttChart(plan);
+          renderResults(plan);
+          renderComparison();
+
+          // Khởi tạo mô phỏng từng bước cho thuật toán vừa chọn
+          const simPlan = selectedSimPlan;
+          if (simPlan) {
+            stepState.isActive = true;
+            stepState.algo = algoType;
+            stepState.currentStep = 0;
+            stepState.snapshots = createSnapshots(simPlan);
+            document.getElementById("step-section").style.display = "block";
+            renderStep(0);
+          }
+
+          // Hiển thị section hoạt ảnh pha trà sữa (chỉ hiển thị nút Bắt đầu, không tự chạy)
+          document.getElementById("animation-section").style.display = "block";
+          document.getElementById("btn-anim-start").disabled = false;
+          document.getElementById("btn-anim-pause").disabled = true;
+          document.getElementById("btn-anim-resume").disabled = true;
+          document.getElementById("btn-anim-reset").disabled = true;
+          document.getElementById("anim-message").textContent = "";
+
+          showToast(`Đã tính toán xong với thuật toán ${algoType}!`);
+        };
+
+        function renderGanttChart(plan) {
+          const emptyState = document.getElementById("gantt-empty-state");
+          const wrapper = document.getElementById("gantt-wrapper");
+          const ganttBar = document.getElementById("gantt-bar");
+          const timeline = document.getElementById("gantt-timeline");
+
+          emptyState.style.display = "none";
+          wrapper.style.display = "block";
+          ganttBar.innerHTML = "";
+          timeline.innerHTML = "";
+
+          const totalTime = plan.totalTime;
+
+          // Render từng block trên thanh Gantt
+          plan.scheduleBlocks.forEach((block) => {
+            const widthPercent = (block.duration / totalTime) * 100;
+            const blockEl = document.createElement("div");
+            blockEl.style.width = `${widthPercent}%`;
+
+            if (block.isIdle) {
+              blockEl.className = "gantt-block gantt-idle-block";
+              blockEl.innerHTML = `
+              <span class="block-name">☕ CPU Rảnh</span>
+              <span class="block-time">[${block.startTime} → ${block.endTime}]</span>
+            `;
+            } else {
+              blockEl.className = "gantt-block";
+              blockEl.style.backgroundColor = block.color;
+              blockEl.innerHTML = `
+              <span class="block-name">${escapeHtml(getCustomerDisplayName({ id: block.id, name: block.name }))}</span>
+              <span class="block-time">[${block.startTime} → ${block.endTime}] (${block.duration}p)</span>
+            `;
+            }
+            ganttBar.appendChild(blockEl);
+          });
+
+          // Render các mốc thời gian (Tick marks)
+          // Tạo tập hợp các mốc thời gian duy nhất
+          const timeMarks = new Set([0]);
+          plan.scheduleBlocks.forEach((b) => {
+            timeMarks.add(b.startTime);
+            timeMarks.add(b.endTime);
+          });
+
+          const sortedMarks = Array.from(timeMarks).sort((a, b) => a - b);
+          sortedMarks.forEach((t) => {
+            const leftPercent = (t / totalTime) * 100;
+            const markEl = document.createElement("div");
+            markEl.className = "gantt-time-mark";
+            markEl.style.left = `${leftPercent}%`;
+            markEl.textContent = t;
+            timeline.appendChild(markEl);
+          });
+        }
+
+        function renderResults(plan) {
+          const resultsSection = document.getElementById("results-section");
+          const tbody = document.getElementById("metrics-table-body");
+          const valAwt = document.getElementById("val-awt");
+          const valAtat = document.getElementById("val-atat");
+          const formulaBox = document.getElementById("formula-detail");
+
+          resultsSection.style.display = "grid";
+
+          // Render hàng kết quả từng khách
+          tbody.innerHTML = plan.results
+            .map(
+              (r) => `
+          <tr>
+            <td>
+              <div class="customer-tag">
+                <span class="customer-bullet" style="background-color: ${r.color};"></span>
+                <strong>${escapeHtml(getCustomerDisplayName(r))}</strong>
+              </div>
+            </td>
+            <td style="text-align: center;">${r.at}</td>
+            <td style="text-align: center;">${r.bt}</td>
+            <td style="text-align: center;">${r.st}</td>
+            <td style="text-align: center; font-weight: 700;">${r.ct}</td>
+            <td style="text-align: center;">${r.tat}</td>
+            <td style="text-align: center; font-weight: 800; color: var(--stitch-blue);">${r.wt}</td>
+          </tr>
+        `,
+            )
+            .join("");
+
+          // Thống kê tổng & trung bình
+          valAwt.textContent = plan.awt.toFixed(2);
+          valAtat.textContent = plan.atat.toFixed(2);
+
+          // Chi tiết công thức
+          const wtParts = plan.results.map((r) => r.wt).join(" + ");
+          formulaBox.innerHTML = `
+          <strong>Công thức chi tiết:</strong><br>
+          • Thời gian chờ: <code>WT = (CT - AT) - BT</code><br>
+          • Tổng thời gian chờ: <code>${wtParts} = ${plan.totalWT}</code><br>
+          • <strong>AWT</strong> = ${plan.totalWT} / ${plan.results.length} = <strong>${plan.awt.toFixed(2)}</strong> đơn vị thời gian.
+        `;
+        }
+
+        // ========================================================================
+        // TIẾN TIẾP: CHUẨN HÓA DỮ LIỆU DỤNG CHUNG CHO SO SÁNH, HOẠT ẢNH VÀ TỪNG BƯỚC
+        // ========================================================================
+
+        /**
+         * buildPlan(customers, algoType)
+         * Chuyển đổi kết quả từ runFCFS/runSJF thành simulationPlan chuẩn.
+         * Dùng chung cho: Gantt so sánh, hoạt ảnh pha trà sữa, mô phỏng từng bước.
+         * Không sửa trực tiếp mảng customers gốc.
+         */
+        function buildPlan(customers, algoType, sourcePlan = null) {
+          const plan =
+            sourcePlan ||
+            (algoType === "FCFS" ? runFCFS(customers) : runSJF(customers));
+          if (!plan) return null;
+          const resultsById = new Map(plan.results.map((r) => [r.id, r]));
+          const inputIndexById = new Map(customers.map((c, index) => [c.id, index]));
+          const simulationPlan = {
+            algo: algoType,
+            totalTime: plan.totalTime,
+            schedule: plan.scheduleBlocks.map((b, i) => ({
+              id: b.id ?? null,
+              name: b.name || "CPU Rảnh",
+              displayName: b.isIdle
+                ? "CPU Rảnh"
+                : getCustomerDisplayName(
+                    { id: b.id, name: b.name },
+                    customers,
+                  ),
+              start: b.startTime,
+              end: b.endTime,
+              duration: b.duration,
+              isIdle: b.isIdle || false,
+              color: b.color || "#E5E7EB",
+              order: b.order || (b.isIdle ? -1 : i + 1),
+              waitingTime: b.waitingTime || 0,
+              at: b.isIdle
+                ? b.startTime
+                : (resultsById.get(b.id)?.at ?? b.startTime),
+              bt: b.isIdle ? 0 : (resultsById.get(b.id)?.bt ?? b.duration),
+              originalIndex: b.isIdle ? -1 : (inputIndexById.get(b.id) ?? i),
+            })),
+            results: plan.results.map((r) => ({
+              id: r.id,
+              name: r.name,
+              displayName: getCustomerDisplayName(r, customers),
+              at: r.at,
+              bt: r.bt,
+              st: r.st,
+              ct: r.ct,
+              tat: r.tat,
+              wt: r.wt,
+              originalIndex: inputIndexById.get(r.id) ?? -1,
+              color: r.color,
+            })),
+            awt: plan.awt,
+            atat: plan.atat,
+          };
+          return simulationPlan;
+        }
+
+        /**
+         * renderComparison()
+         * Vẽ hai Gantt FCFS và SJF song song, tính AWT, hiển thị chênh lệch và highlight.
+         */
+        function renderComparison() {
+          if (customers.length < 3 || customers.length > 5) {
+            document.getElementById("comparison-section").style.display =
+              "none";
+            return;
+          }
+          const section = document.getElementById("comparison-section");
+          section.style.display = "block";
+          const planFCFS = buildPlan(customers, "FCFS");
+          const planSJF = buildPlan(customers, "SJF");
+          if (!planFCFS || !planSJF) return;
+          renderComparisonGantt(
+            "cmp-gantt-bar-fcfs",
+            "cmp-gantt-timeline-fcfs",
+            planFCFS,
+          );
+          document.getElementById("cmp-fcfs-order").textContent =
+            planFCFS.schedule
+              .filter((s) => !s.isIdle)
+              .map((s) => s.displayName)
+              .join(" → ");
+          renderWaitingList("cmp-fcfs-waiting", planFCFS.results);
+          document.getElementById("cmp-fcfs-awt").textContent =
+            planFCFS.awt.toFixed(2);
+          renderComparisonGantt(
+            "cmp-gantt-bar-sjf",
+            "cmp-gantt-timeline-sjf",
+            planSJF,
+          );
+          document.getElementById("cmp-sjf-order").textContent =
+            planSJF.schedule
+              .filter((s) => !s.isIdle)
+              .map((s) => s.displayName)
+              .join(" → ");
+          renderWaitingList("cmp-sjf-waiting", planSJF.results);
+          document.getElementById("cmp-sjf-awt").textContent =
+            planSJF.awt.toFixed(2);
+          const msgEl = document.getElementById("cmp-verdict-message");
+          const diffEl = document.getElementById("cmp-verdiff");
+          const verdictBox = msgEl.parentElement;
+          if (Math.abs(planFCFS.awt - planSJF.awt) < 0.0001) {
+            verdictBox.className = "comparison-verdict verdict-tie";
+            msgEl.textContent =
+              "Hai thuật toán có thời gian chờ trung bình bằng nhau";
+            diffEl.textContent = "";
+          } else if (planSJF.awt < planFCFS.awt) {
+            verdictBox.className = "comparison-verdict verdict-win-sjf";
+            const diff = (planFCFS.awt - planSJF.awt).toFixed(2);
+            msgEl.textContent = "⚡ SJF hiệu quả hơn FCFS";
+            diffEl.textContent = `SJF giảm thời gian chờ trung bình ${diff} đơn vị so với FCFS.`;
+          } else {
+            verdictBox.className = "comparison-verdict verdict-win-fcfs";
+            const diff = (planSJF.awt - planFCFS.awt).toFixed(2);
+            msgEl.textContent = "☕ FCFS hiệu quả hơn SJF";
+            diffEl.textContent = `FCFS giảm thời gian chờ trung bình ${diff} đơn vị so với SJF.`;
+          }
+        }
+
+        /**
+         * renderComparisonGantt(barId, timelineId, plan)
+         * Vẽ Gantt thu nhỏ cho khu vực so sánh.
+         */
+        function renderComparisonGantt(barId, timelineId, plan) {
+          const barEl = document.getElementById(barId);
+          const timelineEl = document.getElementById(timelineId);
+          barEl.innerHTML = "";
+          timelineEl.innerHTML = "";
+          const totalTime = plan.totalTime;
+          plan.schedule.forEach((block) => {
+            const widthPercent =
+              totalTime > 0 ? (block.duration / totalTime) * 100 : 0;
+            const blockEl = document.createElement("div");
+            blockEl.style.width = `${widthPercent}%`;
+            blockEl.style.backgroundColor = block.isIdle
+              ? "#E5E7EB"
+              : block.color;
+            blockEl.className = "gantt-block";
+            const blockLabel = block.isIdle
+              ? "CPU Rảnh"
+              : block.displayName;
+            blockEl.title = `${blockLabel} [${block.start} → ${block.end}]`;
+            if (block.isIdle) {
+              blockEl.style.color = "#6B7280";
+              blockEl.style.textShadow = "none";
+              blockEl.innerHTML = `<span class="block-name">☕ Rảnh</span><span class="block-time">[${block.start} → ${block.end}]</span>`;
+            } else {
+              blockEl.innerHTML = `<span class="block-name">${escapeHtml(block.displayName)}</span><span class="block-time">[${block.start} → ${block.end}]</span>`;
+            }
+            barEl.appendChild(blockEl);
+          });
+          const timeMarks = new Set([0]);
+          plan.schedule.forEach((b) => {
+            timeMarks.add(b.start);
+            timeMarks.add(b.end);
+          });
+          Array.from(timeMarks)
+            .sort((a, b) => a - b)
+            .forEach((t) => {
+              const leftPercent = totalTime > 0 ? (t / totalTime) * 100 : 0;
+              const markEl = document.createElement("div");
+              markEl.className = "gantt-time-mark";
+              markEl.style.left = `${leftPercent}%`;
+              markEl.textContent = t;
+              timelineEl.appendChild(markEl);
+            });
+        }
+
+        /**
+         * renderWaitingList(containerId, results)
+         * Hiển thị thời gian chờ của từng khách.
+         */
+        function renderWaitingList(containerId, results) {
+          const container = document.getElementById(containerId);
+          container.innerHTML = results
+            .map(
+              (r) => `
+          <div class="waiting-item">
+            <span style="display:flex;align-items:center;gap:6px;">
+              <span class="customer-bullet" style="background-color:${r.color};"></span>
+              ${escapeHtml(r.displayName || getCustomerDisplayName(r))}
+            </span>
+            <span class="wt-value">WT = ${r.wt}</span>
+          </div>
+        `,
+            )
+            .join("");
+        }
+
+        /**
+         * resetComparison()
+         * Ẩn section so sánh khi dữ liệu thay đổi.
+         */
+        function resetComparison() {
+          document.getElementById("comparison-section").style.display = "none";
+        }
+
+        // ========================================================================
+        // MÔ PHỎNG TỪNG BƯỚC (STEP-BY-STEP SIMULATION)
+        // ========================================================================
+
+        // Kế hoạch đã chọn được chia sẻ giữa kết quả, từng bước và hoạt ảnh.
+        let selectedSimPlan = null;
+
+        // Trạng thái phiên mô phỏng: 'none' | 'animate' | 'step'.
+        // Ngăn chặn hai phiên hoạt động đồng thời.
+        let simMode = "none";
+
+        let stepState = {
+          currentStep: 0,
+          snapshots: [],
+          algo: null,
+          isActive: false,
+        };
+
+        /**
+         * createSnapshots(plan)
+         * Tạo mảng snapshot trạng thái sau mỗi bước phục vụ.
+         * Mỗi snapshot là deep copy, không làm thay đổi dữ liệu gốc.
+         */
+        function createSnapshots(plan, customerList = customers) {
+          const snapshots = [];
+          let currentTime = 0;
+          const resultsById = new Map(
+            plan.results.map((r) => [r.id, { ...r }]),
+          );
+          const remaining = plan.schedule
+            .filter((s) => !s.isIdle)
+            .map((s) => ({ ...s }));
+
+          // Bước 0: trạng thái ban đầu (chưa phục vụ ai)
+          snapshots.push({
+            step: 0,
+            currentTime: 0,
+            currentCustomer: null,
+            servedSoFar: [],
+            remaining: [...remaining].map((s) => s.displayName),
+            remainingIds: [...remaining].map((s) => s.id),
+            explanation: `CPU ở thời điểm 0. Chưa phục vụ khách nào. Danh sách khách và dữ liệu: ${remaining.map((s) => `${s.displayName} (AT=${s.at}, BT=${s.bt})`).join("; ")}.`,
+          });
+
+          // Tạo snapshot cho mỗi khách được phục vụ
+          for (let i = 0; i < remaining.length; i++) {
+            const cust = remaining[i];
+
+            // Xử lý khoảng CPU rảnh: nếu khách chưa đến, CPU chờ đến thời điểm khách đến.
+            if (cust.start > currentTime) {
+              const idleStart = currentTime;
+              const idleEnd = cust.start;
+              snapshots.push({
+                step: snapshots.length,
+                currentTime: idleEnd,
+                currentCustomer: null,
+                servedSoFar: [...snapshots[snapshots.length - 1].servedSoFar],
+                // Ghi khoảng Idle vào Gantt để các block sau giữ đúng vị trí thời gian.
+                isIdleBlock: {
+                  name: "CPU Rảnh",
+                  start: idleStart,
+                  end: idleEnd,
+                  duration: idleEnd - idleStart,
+                },
+                remaining: remaining.slice(i).map((s) => s.displayName),
+                remainingIds: remaining.slice(i).map((s) => s.id),
+                isIdle: true,
+                explanation: `CPU ở thời điểm ${idleStart} đang Idle vì chưa có khách nào đến và sẵn sàng phục vụ. ${remaining.slice(i).map((s) => `${s.displayName} (AT=${s.at})`).join(", ")} chưa đến; CPU chờ đến ${idleEnd}, khi ${cust.displayName} đến. Khoảng Idle này không tính vào WT của khách.`,
+              });
+              currentTime = idleEnd;
+            }
+
+            const startTime = Math.max(currentTime, cust.start);
+            const endTime = startTime + cust.duration;
+            const custResult = resultsById.get(cust.id);
+            const arrivalTime = custResult ? custResult.at : cust.at;
+            const waitingTime = custResult ? custResult.wt : startTime - arrivalTime;
+            const readyCandidates = remaining
+              .slice(i)
+              .filter((candidate) => candidate.at <= startTime);
+
+            const previousServed = snapshots[snapshots.length - 1].servedSoFar;
+            const idleBlock = snapshots[snapshots.length - 1].isIdleBlock;
+            const servedSoFar = [
+              ...previousServed,
+              ...(idleBlock
+                ? [
+                    {
+                      id: null,
+                      name: "CPU Rảnh",
+                      start: idleBlock.start,
+                      end: idleBlock.end,
+                      duration: idleBlock.duration,
+                      waitingTime: 0,
+                      isIdle: true,
+                    },
+                  ]
+                : []),
+              {
+                id: cust.id,
+                name: cust.name,
+                displayName: cust.displayName,
+                start: startTime,
+                end: endTime,
+                duration: cust.duration,
+                waitingTime: waitingTime,
+              },
+            ];
+
+            currentTime = endTime;
+
+            const nextCustomers = remaining.slice(i + 1);
+            const nextRemaining = nextCustomers.map((s) => s.displayName);
+            const nextRemainingIds = remaining.slice(i + 1).map((s) => s.id);
+
+            snapshots.push({
+              step: snapshots.length,
+              currentTime: currentTime,
+              currentCustomer: cust.displayName,
+              currentCustomerId: cust.id,
+              servedSoFar: servedSoFar,
+              remaining: nextRemaining,
+              remainingIds: nextRemainingIds,
+              explanation: buildStepExplanation(
+                plan.algo,
+                cust,
+                custResult,
+                startTime,
+                endTime,
+                waitingTime,
+                readyCandidates,
+                nextRemaining,
+                nextCustomers[0] || null,
+                customerList,
+              ),
+            });
+          }
+
+          return snapshots;
+        }
+
+        /**
+         * Tạo giải thích từ đúng khách, thời điểm và nhóm sẵn sàng của lịch đã tính.
+         * Sinh văn bản giải thích bằng tiếng Việt cho từng bước.
+         */
+        function buildStepExplanation(
+          algo,
+          cust,
+          custResult,
+          start,
+          end,
+          wt,
+          readyCandidates,
+          remaining,
+          nextCustomer,
+          customerList,
+        ) {
+          const ready = readyCandidates
+            .map((candidate) => `${candidate.displayName} (AT=${candidate.at}, BT=${candidate.bt})`)
+            .join(", ");
+          const remainingText = remaining.length > 0
+            ? `Sau lựa chọn này còn: ${remaining.join(", ")}.`
+            : "Không còn khách nào chưa phục vụ.";
+          const arrivalTime = custResult ? custResult.at : cust.at;
+          const startTime = custResult ? custResult.st : start;
+          const completionTime = custResult ? custResult.ct : end;
+          const actualWaitingTime = custResult ? custResult.wt : wt;
+          let reason;
+          if (algo === "FCFS") {
+            reason = `Nhóm khách đã đến và đang chờ: ${ready || "không có"}. FCFS chọn khách có AT sớm nhất; nếu AT bằng nhau thì giữ thứ tự nhập ban đầu.`;
+          } else {
+            const tied = readyCandidates.filter((candidate) => candidate.bt === cust.bt);
+            const tieRule = tied.length > 1
+              ? ` Có nhiều khách cùng BT nhỏ nhất; ${cust.displayName} được ưu tiên theo thứ tự nhập ban đầu.`
+              : "";
+            reason = `Nhóm khách đã đến và đang chờ: ${ready || "không có"}. SJF chọn BT nhỏ nhất (${cust.bt}). Sau khi bắt đầu, pha chế không bị ngắt giữa chừng.${tieRule}`;
+          }
+          const cpuAfter = !nextCustomer
+            ? `CPU hoàn tất mọi khách tại thời điểm ${completionTime}.`
+            : nextCustomer.start > completionTime
+              ? `CPU hoàn tất lúc ${completionTime}, sau đó Idle đến ${nextCustomer.start} khi ${nextCustomer.displayName} đến.`
+              : `CPU hoàn tất lúc ${completionTime} và bắt đầu phục vụ ${nextCustomer.displayName} ngay sau đó.`;
+          return `CPU ra quyết định tại thời điểm ${startTime}. ${reason} Được chọn: ${cust.displayName}. Bắt đầu ST=${startTime}; pha chế BT=${cust.bt}; kết thúc CT=${completionTime}. Thời gian chờ WT = ST - AT = ${startTime} - ${arrivalTime} = ${actualWaitingTime}. ${remainingText} ${cpuAfter}`;
+        }
+
+        // Bộ tự kiểm tra chạy trực tiếp trên các hàm lập lịch, không dùng hoặc sửa hàng đợi hiện tại.
+        window.runSelfTests = function () {
+          const output = document.getElementById("self-test-results");
+          const originalQueue = JSON.stringify(customers);
+          const checks = [];
+
+          function record(label, callback) {
+            try {
+              const detail = callback();
+              checks.push({ label, pass: true, detail: detail || "đúng" });
+            } catch (error) {
+              checks.push({
+                label,
+                pass: false,
+                detail: error instanceof Error ? error.message : String(error),
+              });
+            }
+          }
+
+          function assertEqual(actual, expected, label) {
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+              throw new Error(`${label}: mong đợi ${JSON.stringify(expected)}, nhận ${JSON.stringify(actual)}`);
+            }
+          }
+
+          function assertPlan(fixture, algo, expectedIds, expectedWaiting, expectedAverage, expectedIntervals) {
+            const source = algo === "FCFS" ? runFCFS(fixture) : runSJF(fixture);
+            assertEqual(source.results.map((r) => r.id), expectedIds, `${algo} order (ID)`);
+            assertEqual(source.results.map((r) => r.wt), expectedWaiting, `${algo} WT`);
+            if (Math.abs(source.awt - expectedAverage) > 1e-9) {
+              throw new Error(`${algo} AWT: mong đợi ${expectedAverage}, nhận ${source.awt}`);
+            }
+            assertEqual(
+              source.results.map((r) => [r.st, r.ct]),
+              expectedIntervals,
+              `${algo} thời gian bắt đầu/kết thúc`,
+            );
+            source.results.forEach((r) => {
+              if (r.wt !== r.st - r.at || r.ct !== r.st + r.bt) {
+                throw new Error(`Sai công thức thời gian của ID ${r.id}`);
+              }
+            });
+            const shared = buildPlan(fixture, algo, source);
+            assertEqual(
+              shared.schedule.filter((block) => !block.isIdle).map((block) => block.id),
+              expectedIds,
+              `${algo} lịch dùng chung`,
+            );
+            return `Thứ tự, Gantt, WT và AWT khớp (${source.awt}).`;
+          }
+
+          const standard = [
+            { id: 9101, name: "A", bt: 5, at: 0, color: "#111111" },
+            { id: 9102, name: "B", bt: 2, at: 0, color: "#222222" },
+            { id: 9103, name: "C", bt: 1, at: 0, color: "#333333" },
+          ];
+          record("Test 1 FCFS: A → B → C, AWT=4", () =>
+            assertPlan(standard, "FCFS", [9101, 9102, 9103], [0, 5, 7], 4, [[0, 5], [5, 7], [7, 8]]),
+          );
+          record("Test 1 SJF: C → B → A, AWT=4/3", () =>
+            assertPlan(standard, "SJF", [9103, 9102, 9101], [0, 1, 3], 4 / 3, [[0, 1], [1, 3], [3, 8]]),
+          );
+
+          const duplicateNames = [
+            { id: 9201, name: "A", bt: 5, at: 0, color: "#111111" },
+            { id: 9202, name: "A", bt: 2, at: 0, color: "#222222" },
+            { id: 9203, name: "B", bt: 1, at: 0, color: "#333333" },
+          ];
+          record("Test 2 khách trùng tên có nhãn ID riêng", () => {
+            assertEqual(getCustomerDisplayName(duplicateNames[0], duplicateNames), "A (#9201)", "Nhãn A thứ nhất");
+            assertEqual(getCustomerDisplayName(duplicateNames[1], duplicateNames), "A (#9202)", "Nhãn A thứ hai");
+            return "Tên gốc giữ nguyên; ID phân biệt hai khách.";
+          });
+          record("Test 2 FCFS/SJF giữ đúng danh tính khách trùng tên", () => {
+            assertPlan(duplicateNames, "FCFS", [9201, 9202, 9203], [0, 5, 7], 4, [[0, 5], [5, 7], [7, 8]]);
+            assertPlan(duplicateNames, "SJF", [9203, 9202, 9201], [0, 1, 3], 4 / 3, [[0, 1], [1, 3], [3, 8]]);
+            const duplicatePlan = buildPlan(duplicateNames, "SJF");
+            const duplicateSteps = createSnapshots(duplicatePlan, duplicateNames);
+            const secondA = duplicateSteps.find((step) => step.currentCustomerId === 9202);
+            if (!secondA || !secondA.explanation.includes("Được chọn: A (#9202)")) {
+              throw new Error("Giải thích không xác định khách A bằng đúng ID.");
+            }
+            return "Thứ tự và lời giải thích tra theo ID.";
+          });
+
+          const tied = [
+            { id: 9301, name: "A", bt: 3, at: 0, color: "#111111" },
+            { id: 9302, name: "B", bt: 3, at: 0, color: "#222222" },
+            { id: 9303, name: "C", bt: 1, at: 0, color: "#333333" },
+          ];
+          record("Test 3 SJF hòa BT giữ thứ tự nhập", () => {
+            const plan = runSJF(tied);
+            assertEqual(plan.results.map((r) => r.id), [9303, 9301, 9302], "SJF tie order");
+            const steps = createSnapshots(buildPlan(tied, "SJF", plan), tied);
+            const selectedA = steps.find((step) => step.currentCustomerId === 9301);
+            if (!selectedA || !selectedA.explanation.includes("cùng BT nhỏ nhất") || !selectedA.explanation.includes("thứ tự nhập ban đầu")) {
+              throw new Error("Giải thích chưa nêu quy tắc hòa BT.");
+            }
+            return "C được chọn trước; A đứng trước B khi BT cùng bằng 3.";
+          });
+
+          const idleCustomers = [
+            { id: 9401, name: "Đến muộn 1", bt: 2, at: 3, color: "#111111" },
+            { id: 9402, name: "Đến muộn 2", bt: 1, at: 5, color: "#222222" },
+            { id: 9403, name: "Đến muộn 3", bt: 1, at: 8, color: "#333333" },
+          ];
+          record("Test 6 Idle, Gantt bước và WT", () => {
+            const plan = runFCFS(idleCustomers);
+            assertEqual(
+              plan.scheduleBlocks.filter((block) => block.isIdle).map((block) => [block.startTime, block.endTime]),
+              [[0, 3], [6, 8]],
+              "Khoảng Idle",
+            );
+            assertEqual(plan.results.map((r) => r.wt), [0, 0, 0], "WT không tính Idle trước khi đến");
+            const snapshots = createSnapshots(buildPlan(idleCustomers, "FCFS", plan), idleCustomers);
+            const idleSteps = snapshots.filter((step) => step.isIdle);
+            assertEqual(idleSteps.map((step) => [step.currentTime, step.isIdleBlock.duration]), [[3, 3], [8, 2]], "Snapshot Idle");
+            if (!snapshots.some((step) => step.servedSoFar.some((block) => block.isIdle))) {
+              throw new Error("Gantt bước không giữ các block Idle sau khi tiếp tục.");
+            }
+            return "Idle hiển thị riêng; WT chỉ tính từ AT đến ST.";
+          });
+
+          record("Dữ liệu khách đang nhập không bị thay đổi", () => {
+            if (JSON.stringify(customers) !== originalQueue) {
+              throw new Error("Bộ kiểm tra đã làm thay đổi hàng đợi hiện tại.");
+            }
+            return "Hàng đợi hiện tại được giữ nguyên.";
+          });
+
+          const passed = checks.filter((check) => check.pass).length;
+          const allPassed = passed === checks.length;
+          output.className = `self-test-results ${allPassed ? "pass" : "fail"}`;
+          output.textContent = `Kiểm tra logic: ${passed}/${checks.length} PASS\n${checks
+            .map((check) => `${check.pass ? "PASS" : "FAIL"} — ${check.label}: ${check.detail}`)
+            .join("\n")}`;
+        };
+
+        /**
+         * stepNext()
+         * Chuyển sang bước tiếp theo trong mô phỏng.
+         */
+        window.stepNext = function () {
+          if (
+            !stepState.isActive ||
+            simMode === "animate" ||
+            stepState.currentStep >= stepState.snapshots.length - 1
+          )
+            return;
+          simMode = "step";
+          stepState.currentStep++;
+          renderStep(stepState.currentStep);
+        };
+
+        /**
+         * stepPrev()
+         * Quay lại bước trước.
+         */
+        window.stepPrev = function () {
+          if (
+            !stepState.isActive ||
+            simMode === "animate" ||
+            stepState.currentStep <= 0
+          )
+            return;
+          simMode = "step";
+          stepState.currentStep--;
+          renderStep(stepState.currentStep);
+        };
+
+        /**
+         * stepFirst()
+         * Về bước đầu tiên.
+         */
+        window.stepFirst = function () {
+          if (!stepState.isActive || simMode === "animate") return;
+          simMode = "step";
+          stepState.currentStep = 0;
+          renderStep(0);
+        };
+
+        /**
+         * renderStep(stepIndex)
+         * Render giao diện cho bước hiện tại của mô phỏng từng bước.
+         */
+        function renderStep(stepIndex) {
+          const snap = stepState.snapshots[stepIndex];
+          if (!snap) return;
+
+          document.getElementById("step-current").textContent = stepIndex;
+          document.getElementById("step-total").textContent =
+            stepState.snapshots.length - 1;
+          document.getElementById("step-clock-value").textContent =
+            snap.currentTime;
+
+          // Cập nhật nút điều khiển
+          document.getElementById("btn-step-first").disabled = stepIndex <= 0;
+          document.getElementById("btn-step-prev").disabled = stepIndex <= 0;
+          document.getElementById("btn-step-next").disabled =
+            stepIndex >= stepState.snapshots.length - 1;
+
+          // Giải thích
+          document.getElementById("step-explanation-text").textContent =
+            snap.explanation;
+
+          // Hàng đợi còn lại
+          document.getElementById("step-queue-list").textContent =
+            snap.remaining.length > 0
+              ? snap.remaining.join(", ")
+              : "(Không còn khách)";
+
+          // Khách hiện tại (dùng ID để phân biệt khách trùng tên)
+          const currentNameEl = document.getElementById("step-current-name");
+          const currentDetailEl = document.getElementById(
+            "step-current-detail",
+          );
+          if (snap.currentCustomer) {
+            currentNameEl.textContent = snap.currentCustomer;
+            const served = snap.servedSoFar.find(
+              (s) => s.id === snap.currentCustomerId,
+            );
+            currentDetailEl.textContent = served
+              ? `Bắt đầu: ${served.start} • Kết thúc: ${served.end} • Thời gian chờ: ${served.waitingTime}`
+              : "";
+          } else if (snap.isIdle) {
+            currentNameEl.textContent = "CPU Rảnh";
+            currentDetailEl.textContent = "Không có khách đang được phục vụ.";
+          } else {
+            currentNameEl.textContent = "--";
+            currentDetailEl.textContent = "Chưa có khách được phục vụ.";
+          }
+
+          // Vẽ Gantt đến bước hiện tại (bao gồm cả khối Idle nếu có)
+          const stepBlocks = [
+            ...snap.servedSoFar,
+            ...(snap.isIdleBlock
+              ? [
+                  {
+                    id: null,
+                    name: "CPU Rảnh",
+                    start: snap.isIdleBlock.start,
+                    end: snap.isIdleBlock.end,
+                    duration: snap.isIdleBlock.duration,
+                    isIdle: true,
+                  },
+                ]
+              : []),
+          ];
+          const servedSoFar = stepBlocks.map((s) => ({
+            id: s.id,
+            name: s.name,
+            displayName: s.displayName || s.name,
+            start: s.start,
+            end: s.end,
+            duration: s.duration,
+            color:
+              s.id !== null && s.id !== undefined
+                ? getColorById(s.id)
+                : "#E5E7EB",
+            isIdle: s.isIdle || false,
+            waitingTime: s.waitingTime,
+          }));
+          renderStepGantt(servedSoFar, snap.currentTime);
+        }
+
+        /**
+         * renderStepGantt(servedBlocks, currentTime)
+         * Vẽ Gantt nhỏ cho các khách đã phục vụ đến bước hiện tại.
+         */
+        function renderStepGantt(servedBlocks, currentTime) {
+          const barEl = document.getElementById("step-gantt-bar");
+          const timelineEl = document.getElementById("step-gantt-timeline");
+          barEl.innerHTML = "";
+          timelineEl.innerHTML = "";
+
+          if (servedBlocks.length === 0) {
+            barEl.innerHTML = `<div class="gantt-block gantt-idle-block" style="width:100%;background:#E5E7EB;color:#6B7280;text-shadow:none;">
+            <span class="block-name">Chưa có khách</span>
+          </div>`;
+            timelineEl.innerHTML = `<div class="gantt-time-mark" style="left:0%;">0</div>`;
+            return;
+          }
+
+          const totalTime = currentTime > 0 ? currentTime : 1;
+          servedBlocks.forEach((block) => {
+            const widthPercent = (block.duration / totalTime) * 100;
+            const blockEl = document.createElement("div");
+            blockEl.style.width = `${widthPercent}%`;
+            blockEl.style.backgroundColor = block.isIdle
+              ? "#E5E7EB"
+              : block.color;
+            blockEl.className = "gantt-block";
+            if (block.isIdle) {
+              blockEl.style.color = "#6B7280";
+              blockEl.style.textShadow = "none";
+              blockEl.innerHTML = `<span class="block-name">☕ Rảnh</span><span class="block-time">[${block.start} → ${block.end}]</span>`;
+            } else {
+              blockEl.innerHTML = `<span class="block-name">${escapeHtml(block.displayName || block.name)}</span><span class="block-time">[${block.start} → ${block.end}]</span>`;
+            }
+            barEl.appendChild(blockEl);
+          });
+
+          const marks = new Set([0]);
+          servedBlocks.forEach((b) => {
+            marks.add(b.start);
+            marks.add(b.end);
+          });
+          marks.add(currentTime);
+          Array.from(marks)
+            .sort((a, b) => a - b)
+            .forEach((t) => {
+              const leftPercent = (t / totalTime) * 100;
+              const markEl = document.createElement("div");
+              markEl.className = "gantt-time-mark";
+              markEl.style.left = `${leftPercent}%`;
+              markEl.textContent = t;
+              timelineEl.appendChild(markEl);
+            });
+        }
+
+        /**
+         * getColorById(id)
+         * Trả về màu sắc của khách hàng theo ID (tái sử dụng palette).
+         */
+        function getColorById(id) {
+          const found = customers.find((c) => c.id === id);
+          return found ? found.color : "#9CA3AF";
+        }
+
+        /**
+         * resetStepSimulation()
+         * Ẩn và reset trạng thái mô phỏng từng bước.
+         */
+        function resetStepSimulation() {
+          stepState.isActive = false;
+          stepState.currentStep = 0;
+          stepState.snapshots = [];
+          stepState.algo = null;
+          setStepControlsDisabled(false);
+          simMode = "none";
+          document.getElementById("step-section").style.display = "none";
+        }
+
+        // ========================================================================
+        // HOẠT ẢNH PHA TRÀ SỮA (CPU ANIMATION SIMULATION)
+        // ========================================================================
+
+        let animState = {
+          isRunning: false,
+          isPaused: false,
+          currentIndex: 0,
+          elapsedTime: 0,
+          animationFrameId: null,
+          speed: 1,
+          plan: null,
+          lastFrameTime: null,
+        };
+
+        function setStepControlsDisabled(disabled) {
+          ["btn-step-first", "btn-step-prev", "btn-step-next"].forEach((id) => {
+            const button = document.getElementById(id);
+            if (button)
+              button.disabled =
+                disabled ||
+                !stepState.isActive ||
+                ((id === "btn-step-first" || id === "btn-step-prev") &&
+                  stepState.currentStep <= 0) ||
+                (id === "btn-step-next" &&
+                  stepState.currentStep >= stepState.snapshots.length - 1);
+          });
+        }
+
+        /**
+         * startAnimation()
+         * Bắt đầu hoạt ảnh theo đúng kế hoạch đã dùng để vẽ Gantt và bảng kết quả.
+         * Thời gian hoạt ảnh chỉ là trực quan, không làm thay đổi kết quả tính toán.
+         */
+        window.startAnimation = function () {
+          if (animState.isRunning) return;
+          // Chỉ cho phép một phiên hoạt ảnh tại một thời điểm.
+          if (animState.animationFrameId !== null) {
+            cancelAnimationFrame(animState.animationFrameId);
+            animState.animationFrameId = null;
+          }
+
+          const simPlan = selectedSimPlan;
+          if (!simPlan) {
+            showToast("Vui lòng chạy thuật toán trước khi mô phỏng hoạt ảnh!");
+            return;
+          }
+
+          simMode = "animate";
+          animState.plan = simPlan;
+          animState.isRunning = true;
+          animState.isPaused = false;
+          animState.currentIndex = 0;
+          animState.elapsedTime = 0;
+          animState.lastFrameTime = null;
+          animState.speed =
+            parseFloat(document.getElementById("anim-speed").value) || 1;
+
+          document.getElementById("animation-section").style.display = "block";
+          document.getElementById("btn-anim-start").disabled = true;
+          setStepControlsDisabled(true);
+          document.getElementById("btn-anim-pause").disabled = false;
+          document.getElementById("btn-anim-resume").disabled = true;
+          document.getElementById("btn-anim-reset").disabled = false;
+          document.getElementById("anim-message").textContent = "";
+          document.getElementById("anim-message").className =
+            "anim-message info";
+
+          renderAnimationQueue();
+          animLoop(performance.now());
+        };
+
+        /**
+         * pauseAnimation()
+         * Tạm dừng hoạt ảnh tại trạng thái hiện tại.
+         */
+        window.pauseAnimation = function () {
+          if (!animState.isRunning || animState.isPaused) return;
+          animState.isPaused = true;
+          if (animState.animationFrameId !== null) {
+            cancelAnimationFrame(animState.animationFrameId);
+            animState.animationFrameId = null;
+          }
+          document.getElementById("btn-anim-pause").disabled = true;
+          document.getElementById("btn-anim-resume").disabled = false;
+          document.getElementById("anim-message").textContent =
+            "Đã tạm dừng hoạt ảnh.";
+          document.getElementById("anim-message").className =
+            "anim-message info";
+          renderAnimationQueue();
+        };
+
+        /**
+         * resumeAnimation()
+         * Tiếp tục hoạt ảnh từ vị trí đã tạm dừng.
+         */
+        window.resumeAnimation = function () {
+          if (!animState.isRunning || !animState.isPaused) return;
+          animState.isPaused = false;
+          animState.lastFrameTime = null;
+          document.getElementById("btn-anim-pause").disabled = false;
+          document.getElementById("btn-anim-resume").disabled = true;
+          document.getElementById("anim-message").textContent = "";
+          renderAnimationQueue();
+          animLoop(performance.now());
+        };
+
+        /**
+         * resetAnimation()
+         * Đặt lại mọi trạng thái hoạt ảnh về ban đầu, không ảnh hưởng dữ liệu nhập.
+         */
+        window.resetAnimation = function () {
+          if (animState.animationFrameId !== null) {
+            cancelAnimationFrame(animState.animationFrameId);
+            animState.animationFrameId = null;
+          }
+          animState.isRunning = false;
+          animState.isPaused = false;
+          animState.currentIndex = 0;
+          animState.elapsedTime = 0;
+          animState.plan = null;
+          animState.lastFrameTime = null;
+          simMode = "none";
+          setStepControlsDisabled(false);
+
+          document.getElementById("btn-anim-start").disabled = false;
+          document.getElementById("btn-anim-pause").disabled = true;
+          document.getElementById("btn-anim-resume").disabled = true;
+          document.getElementById("btn-anim-reset").disabled = true;
+          document.getElementById("anim-message").textContent = "";
+          document.getElementById("anim-current-name").textContent = "--";
+          document.getElementById("anim-current-status").textContent =
+            "Đang chờ bắt đầu";
+          document.getElementById("anim-progress-fill").style.width = "0%";
+          document.getElementById("anim-progress-pct").textContent = "0%";
+          renderAnimationQueue();
+        };
+
+        /**
+         * setSpeed(value)
+         * Thay đổi tốc độ mô phỏng: 0.5x, 1x, 2x, 4x.
+         */
+        window.setSpeed = function (value) {
+          animState.speed = parseFloat(value) || 1;
+        };
+
+        /**
+         * animLoop(timestamp)
+         * Vòng lặp hoạt ảnh chính dùng requestAnimationFrame.
+         * Cập nhật thanh tiến trình và chuyển khách khi xong một khách.
+         * Chỉ có tối đa 1 animationFrameId chạy tại một thời điểm.
+         */
+        function animLoop(timestamp) {
+          if (!animState.isRunning || animState.isPaused) return;
+
+          if (animState.lastFrameTime === null) {
+            animState.lastFrameTime = timestamp;
+          }
+
+          const deltaTime = (timestamp - animState.lastFrameTime) / 1000; // giây
+          animState.lastFrameTime = timestamp;
+
+          // Tăng thời gian đã pha chế theo tốc độ (1 đơn vị thời gian = 1 giây thực)
+          animState.elapsedTime += deltaTime * animState.speed;
+
+          const plan = animState.plan;
+          const schedule = plan.schedule;
+
+          // Nếu đã phục vụ xong tất cả khách
+          while (
+            animState.currentIndex < schedule.length &&
+            animState.elapsedTime >= schedule[animState.currentIndex].end
+          ) {
+            animState.currentIndex++;
+          }
+
+          if (animState.currentIndex >= schedule.length) {
+            document.getElementById("anim-progress-fill").style.width = "100%";
+            document.getElementById("anim-progress-pct").textContent = "100%";
+            document.getElementById("anim-current-name").textContent =
+              "Hoàn thành tất cả";
+            document.getElementById("anim-current-status").textContent =
+              "CPU đã phục vụ hết khách hàng";
+            document.getElementById("anim-message").textContent =
+              "✅ Tất cả khách hàng đã được phục vụ!";
+            document.getElementById("anim-message").className =
+              "anim-message success";
+            document.getElementById("btn-anim-start").disabled = false;
+            document.getElementById("btn-anim-pause").disabled = true;
+            document.getElementById("btn-anim-resume").disabled = true;
+            document.getElementById("btn-anim-reset").disabled = false;
+            animState.isRunning = false;
+            animState.animationFrameId = null;
+            simMode = "none";
+            setStepControlsDisabled(false);
+            renderAnimationQueue();
+            return;
+          }
+
+          const currentCust = schedule[animState.currentIndex];
+          const startTime = currentCust.start;
+          const duration = currentCust.duration;
+
+          // Trong khoảng Idle CPU không chọn hoặc đánh dấu khách nào đang phục vụ.
+          if (currentCust.isIdle) {
+            document.getElementById("anim-progress-fill").style.width = "0%";
+            document.getElementById("anim-progress-pct").textContent = "0%";
+            document.getElementById("anim-current-name").textContent =
+              "CPU Rảnh";
+            document.getElementById("anim-current-status").textContent =
+              `Đang chờ khách... ${Math.min(animState.elapsedTime - startTime, duration).toFixed(1)}/${duration}`;
+            animState.animationFrameId = requestAnimationFrame(animLoop);
+            updateAnimationUI();
+            return;
+          }
+
+          // Tính phần trăm hoàn thành của khách hiện tại.
+          const progressInCurrent = Math.max(
+            0,
+            Math.min(1, (animState.elapsedTime - startTime) / duration),
+          );
+          const pct = Math.round(progressInCurrent * 100);
+
+          document.getElementById("anim-progress-fill").style.width = `${pct}%`;
+          document.getElementById("anim-progress-pct").textContent = `${pct}%`;
+          document.getElementById("anim-current-name").textContent =
+            currentCust.displayName;
+          const elapsedInCurrent = Math.max(
+            0,
+            animState.elapsedTime - startTime,
+          );
+          document.getElementById("anim-current-status").textContent =
+            `Đang pha chế... ${elapsedInCurrent.toFixed(1)}/${duration}`;
+
+          animState.animationFrameId = requestAnimationFrame(animLoop);
+          updateAnimationUI();
+        }
+
+        /**
+         * updateAnimationUI()
+         * Cập nhật trạng thái hàng đợi trong hoạt ảnh.
+         */
+        function updateAnimationUI() {
+          renderAnimationQueue();
+        }
+
+        /**
+         * renderAnimationQueue()
+         * Render danh sách khách hàng trong hàng đợi với trạng thái: Đang chờ / Đang phục vụ / Hoàn thành.
+         */
+        function renderAnimationQueue() {
+          const container = document.getElementById("anim-queue-list");
+          if (!animState.plan) {
+            container.innerHTML =
+              '<div style="color: var(--text-muted); font-size: 13px;">Chưa có dữ liệu.</div>';
+            return;
+          }
+          const schedule = animState.plan.schedule.filter((s) => !s.isIdle);
+
+          const html = schedule
+            .map((c) => {
+              const currentTime = animState.elapsedTime;
+              let statusClass = "waiting";
+              let statusText = "Đang chờ";
+              if (c.end <= currentTime) {
+                statusClass = "done";
+                statusText = "Hoàn thành";
+              } else if (
+                c.start <= currentTime &&
+                currentTime < c.end &&
+                animState.isRunning
+              ) {
+                statusClass = "serving";
+                statusText = animState.isPaused ? "Tạm dừng" : "Đang phục vụ";
+              }
+              const color = getColorById(c.id);
+              return `
+            <div class="anim-queue-customer ${statusClass}" title="${statusText}">
+              <span class="customer-bullet" style="background-color:${color};"></span>
+              <span>${escapeHtml(c.displayName)}</span>
+              <span style="margin-left:auto; font-size: 11.5px; font-weight: 700; color: var(--text-muted);">${statusText}</span>
+            </div>
+          `;
+            })
+            .join("");
+          container.innerHTML = html;
+        }
+
+        // Khởi tạo ứng dụng: tự động tải dữ liệu mẫu để sẵn sàng trải nghiệm
+        window.addEventListener("DOMContentLoaded", () => {
+          loadSampleData();
+          // Tự động chạy thuật toán FCFS lúc khởi động để hiển thị ngay biểu đồ Gantt
+          triggerAlgorithm("FCFS");
+        });
+      })();
+    </script>
+  </body>
+</html>

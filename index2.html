@@ -1,0 +1,2699 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cây Cầu Độc Đạo — Deadlock & Mutex Simulator</title>
+  <style>
+    /* ==========================================================================
+       1. DESIGN SYSTEM & STITCH THEME TOKENS
+       ========================================================================== */
+    :root {
+      --bg-cream: #fbf9f4;
+      --bg-secondary: #f3ecdf;
+      --card-bg: #ffffff;
+      --card-border: #e6dac8;
+      
+      --stitch-blue: #2a75d3;
+      --stitch-dark: #164e93;
+      --stitch-light: #e8f2fc;
+      --stitch-glow: rgba(42, 117, 211, 0.35);
+
+      --angel-pink: #f06292;
+      --angel-dark: #ad1457;
+      --angel-light: #fce4ec;
+      --angel-glow: rgba(240, 98, 146, 0.35);
+
+      --bridge-wood: #7c4d32;
+      --bridge-plank: #9a6344;
+      --water-deep: #3b82f6;
+      --water-light: #93c5fd;
+
+      --deadlock-red: #e63946;
+      --deadlock-bg: #ffebee;
+      --deadlock-glow: rgba(230, 57, 70, 0.4);
+
+      --mutex-green: #10b981;
+      --mutex-bg: #ecfdf5;
+      --mutex-dark: #047857;
+
+      --gold-accent: #f59e0b;
+      --text-main: #2d231b;
+      --text-muted: #6b5c51;
+      --text-light: #8c7b70;
+
+      --shadow-sm: 0 2px 6px rgba(45, 35, 27, 0.06);
+      --shadow-md: 0 8px 20px rgba(45, 35, 27, 0.08);
+      --shadow-lg: 0 16px 36px rgba(45, 35, 27, 0.12);
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-cream);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 20px 16px 60px;
+    }
+
+    .container {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(135deg, #184d8c 0%, #2a75d3 50%, #4b90e2 100%);
+      color: #ffffff;
+      padding: 24px 30px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: "";
+      position: absolute;
+      top: -60px;
+      right: -40px;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .mascot-pair {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .mascot-avatar {
+      width: 68px;
+      height: 68px;
+      background: #ffffff;
+      border-radius: 50%;
+      padding: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .mascot-avatar.angel {
+      margin-left: -14px;
+      border: 3px solid #ffccd9;
+    }
+    .mascot-avatar.stitch {
+      border: 3px solid #bbdcfc;
+      z-index: 2;
+    }
+
+    .mascot-avatar svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .header-text h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-badge {
+      background: #fef08a;
+      color: #854d0e;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header-text p {
+      font-size: 14px;
+      opacity: 0.94;
+      margin-top: 4px;
+      max-width: 680px;
+    }
+
+    /* MODE TOGGLE SWITCHER */
+    .mode-switcher-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      flex-wrap: wrap;
+    }
+
+    .mode-label-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mode-label-group .title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+    }
+
+    .mode-tabs {
+      display: flex;
+      background: var(--bg-secondary);
+      padding: 4px;
+      border-radius: 30px;
+      border: 1px solid var(--card-border);
+    }
+
+    .mode-tab-btn {
+      padding: 8px 20px;
+      border-radius: 24px;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+
+    .mode-tab-btn.active.deadlock-mode {
+      background: var(--deadlock-red);
+      color: #ffffff;
+      box-shadow: 0 2px 10px var(--deadlock-glow);
+    }
+
+    .mode-tab-btn.active.mutex-mode {
+      background: var(--mutex-green);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+    }
+
+    .mode-desc-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* CONTROL & CONFIGURATION BAR */
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      font-size: 13.5px;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
+
+    .btn-primary {
+      background: var(--stitch-blue);
+      color: #ffffff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--stitch-dark);
+      box-shadow: 0 4px 12px var(--stitch-glow);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-main);
+      border-color: var(--card-border);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #e9decb;
+    }
+
+    .btn-step {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+    .btn-step:hover:not(:disabled) {
+      background: #fde68a;
+    }
+
+    .btn-reset {
+      background: #f3f4f6;
+      color: #4b5563;
+      border-color: #e5e7eb;
+    }
+    .btn-reset:hover:not(:disabled) {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    /* PREEMPTION EMERGENCY BUTTON */
+    .btn-emergency {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+      border: 1px solid #b91c1c;
+      animation: pulseAlert 1.5s infinite;
+      display: none;
+    }
+    .btn-emergency.visible {
+      display: inline-flex;
+    }
+    .btn-emergency:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    @keyframes pulseAlert {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* DISPATCH & SPEED SETTINGS */
+    .settings-subrow {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: var(--bg-secondary);
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      font-size: 13.5px;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setting-label {
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pills-radio {
+      display: flex;
+      gap: 4px;
+      background: #ffffff;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+    }
+
+    .pill-opt {
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .pill-opt.active {
+      background: var(--stitch-blue);
+      color: #ffffff;
+    }
+    .pill-opt.active.pink {
+      background: var(--angel-pink);
+    }
+
+    .speed-select, .slider-control {
+      accent-color: var(--stitch-blue);
+    }
+
+    /* SIMULATION CANVAS STAGE */
+    .stage-wrapper {
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .stage-hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f0e6d9;
+    }
+
+    .hud-title {
+      font-weight: 800;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+    .hud-pill.status-safe {
+      background: var(--mutex-bg);
+      color: var(--mutex-dark);
+      border: 1px solid #a7f3d0;
+    }
+    .hud-pill.status-deadlock {
+      background: var(--deadlock-bg);
+      color: var(--deadlock-red);
+      border: 1px solid #fecaca;
+      animation: pulseAlert 1.5s infinite;
+    }
+    .hud-pill.status-waiting {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    canvas#simCanvas {
+      box-sizing: content-box;
+      width: calc(100% - 2px);
+      height: auto;
+      aspect-ratio: 1180 / 340;
+      border-radius: var(--radius-md);
+      display: block;
+      background: #eef6fc;
+      border: 1px solid #cce3f8;
+    }
+
+    /* THREE-COLUMN DASHBOARD CARDS */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.15fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--bg-secondary);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* RAG GRAPH VISUALIZER */
+    .rag-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+    }
+
+    .rag-svg {
+      width: 100%;
+      max-width: 320px;
+      height: 180px;
+    }
+
+    .resource-status-list {
+      width: 100%;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12.5px;
+    }
+
+    .resource-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: var(--bg-secondary);
+      border-radius: 6px;
+    }
+    .res-badge {
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .res-free { background: #d1fae5; color: #065f46; }
+    .res-held-a { background: var(--stitch-light); color: var(--stitch-dark); }
+    .res-held-b { background: var(--angel-light); color: var(--angel-dark); }
+
+    /* COFFMAN CRITERIA LIST */
+    .coffman-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .coffman-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: var(--bg-secondary);
+      border-left: 4px solid #cbd5e1;
+    }
+    .coffman-item.met {
+      border-left-color: var(--deadlock-red);
+      background: #fff5f5;
+    }
+    .coffman-item.broken {
+      border-left-color: var(--mutex-green);
+      background: #f0fdf4;
+    }
+
+    .coffman-name {
+      font-weight: 700;
+      color: var(--text-main);
+      display: block;
+    }
+    .coffman-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+    .coffman-flag {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .flag-yes { background: #fee2e2; color: #991b1b; }
+    .flag-no { background: #dcfce7; color: #166534; }
+
+    /* LOG & EXPLAINER */
+    .explainer-box {
+      background: #fefce8;
+      border: 1px solid #fef08a;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #713f12;
+      line-height: 1.45;
+    }
+
+    .log-stream {
+      flex: 1;
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding-right: 4px;
+    }
+
+    .log-entry {
+      padding: 5px 8px;
+      border-radius: 4px;
+      background: var(--bg-secondary);
+      border-left: 3px solid #cbd5e1;
+      line-height: 1.4;
+    }
+    .log-entry.info { border-left-color: var(--stitch-blue); }
+    .log-entry.warn { border-left-color: #f59e0b; background: #fffbeb; }
+    .log-entry.danger { border-left-color: var(--deadlock-red); background: #fef2f2; }
+    .log-entry.success { border-left-color: var(--mutex-green); background: #f0fdf4; }
+
+    /* COMPARISON TABLE */
+    .comparison-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .comparison-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    .comp-table th, .comp-table td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #f0e6d9;
+    }
+
+    .comp-table th {
+      background: var(--bg-secondary);
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .comp-table tr:hover td {
+      background: #faf6f0;
+    }
+
+    .tag-danger {
+      color: var(--deadlock-red);
+      font-weight: 700;
+    }
+    .tag-safe {
+      color: var(--mutex-green);
+      font-weight: 700;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    header, .header-left, .hud-title, .stage-hud { flex-wrap: wrap; }
+    .pills-radio { flex-wrap: wrap; }
+    .setting-item, .card, .stage-hud > div { min-width: 0; }
+    .comparison-section { overflow-x: auto; }
+    /* RESPONSIVE: Small screens */
+    @media (max-width: 768px) {
+      .control-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .button-group {
+        width: 100%;
+        flex-direction: column;
+      }
+      .button-group .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .btn-emergency {
+        width: 100%;
+        justify-content: center;
+      }
+      .settings-subrow {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .setting-item {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .setting-item select,
+      .setting-item input[type=range] {
+        width: 100%;
+      }
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      canvas#simCanvas {
+        height: auto;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- ==========================================================================
+       HEADER: STITCH & ANGEL MASCOTS
+       ========================================================================== -->
+  <header>
+    <div class="header-left">
+      <div class="mascot-pair">
+        <!-- Stitch Avatar SVG -->
+        <div class="mascot-avatar stitch" title="Stitch (Xe Xanh - Hướng Tây)">
+          <svg viewBox="0 0 100 100">
+            <ellipse cx="50" cy="55" rx="35" ry="32" fill="#2a75d3" />
+            <polygon points="18,35 2,5 36,25" fill="#184d8c" />
+            <polygon points="20,33 6,10 32,25" fill="#f8719d" opacity="0.6" />
+            <polygon points="82,35 98,5 64,25" fill="#184d8c" />
+            <polygon points="80,33 94,10 68,25" fill="#f8719d" opacity="0.6" />
+            <ellipse cx="38" cy="50" rx="9" ry="12" fill="#ffffff" />
+            <ellipse cx="62" cy="50" rx="9" ry="12" fill="#ffffff" />
+            <circle cx="40" cy="51" r="5" fill="#111827" />
+            <circle cx="60" cy="51" r="5" fill="#111827" />
+            <ellipse cx="50" cy="62" rx="7" ry="4.5" fill="#184d8c" />
+            <path d="M42,70 Q50,77 58,70" stroke="#184d8c" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          </svg>
+        </div>
+        <!-- Angel Avatar SVG -->
+        <div class="mascot-avatar angel" title="Angel (Xe Hồng - Hướng Đông)">
+          <svg viewBox="0 0 100 100">
+            <ellipse cx="50" cy="55" rx="35" ry="32" fill="#f06292" />
+            <polygon points="18,35 2,8 36,25" fill="#ad1457" />
+            <polygon points="20,33 6,12 32,25" fill="#fce4ec" opacity="0.7" />
+            <polygon points="82,35 98,8 64,25" fill="#ad1457" />
+            <polygon points="80,33 94,12 68,25" fill="#fce4ec" opacity="0.7" />
+            <ellipse cx="38" cy="50" rx="9" ry="12" fill="#ffffff" />
+            <ellipse cx="62" cy="50" rx="9" ry="12" fill="#ffffff" />
+            <circle cx="40" cy="51" r="5" fill="#2d121c" />
+            <circle cx="60" cy="51" r="5" fill="#2d121c" />
+            <ellipse cx="50" cy="62" rx="6" ry="4" fill="#ad1457" />
+            <path d="M43,69 Q50,75 57,69" stroke="#ad1457" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          </svg>
+        </div>
+      </div>
+      <div class="header-text">
+        <h1>
+          Cây Cầu Độc Đạo
+          <span class="header-badge">Hệ Điều Hành & Lập Trình Đồng Thời</span>
+        </h1>
+        <p>Mô phỏng tương tác chuyên sâu: <strong>Deadlock (Bế tắc)</strong>, <strong>Binary Mutex (khóa nhị phân, tối đa một xe giữ khóa)</strong> và <strong>Cơ chế Giải cứu bằng Preemption (Tước đoạt tài nguyên)</strong>.</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       CONTROL PANEL & DISPATCH SETTINGS
+       ========================================================================== -->
+  <div class="control-panel">
+    <!-- Row 1: Playback Buttons & Emergency Action -->
+    <div class="control-row">
+      <div class="button-group">
+        <button id="btnStart" class="btn btn-primary" onclick="startSim()">
+          <span>▶</span> Bắt đầu
+        </button>
+        <button id="btnPause" class="btn btn-secondary" onclick="pauseSim()" disabled>
+          <span>⏸</span> Tạm dừng
+        </button>
+        <button id="btnResume" class="btn btn-secondary" onclick="resumeSim()" disabled>
+          <span>⏵</span> Tiếp tục
+        </button>
+        <button id="btnPrevStep" class="btn btn-step" onclick="previousStep()">
+          <span>⏮</span> Bước trước
+        </button>
+        <button id="btnStep" class="btn btn-step" onclick="stepSim()">
+          <span>⏭</span> Sự kiện tiếp theo
+        </button>
+        <button id="btnReset" class="btn btn-reset" onclick="resetSim()">
+          <span>🔄</span> Làm mới (Reset)
+        </button>
+      </div>
+
+      <!-- Rescue Button (Appears only during Deadlock) -->
+      <button id="btnEmergencyRescue" class="btn btn-emergency" onclick="triggerPreemptionRescue('AUTO')">
+        <span>🚨</span> GIẢI CỨU BẰNG PREEMPTION (TƯỚC ĐOẠT TÀI NGUYÊN)
+      </button>
+    </div>
+
+    <!-- Row 2: Mode Selection & Speed Settings -->
+    <div class="settings-subrow">
+      <div class="setting-item">
+        <span class="setting-label">🌉 Chế độ mô phỏng:</span>
+        <div class="pills-radio">
+          <div class="pill-opt active" id="optModeDeadlock" onclick="selectMode('DEADLOCK')">🔒 Bế tắc (Deadlock)</div>
+          <div class="pill-opt" id="optModeMutex" onclick="selectMode('MUTEX')">🗝️ Đồng bộ (Binary Mutex)</div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">⚡ Tốc độ mô phỏng:</span>
+        <select id="selectSpeed" class="btn-secondary" style="padding: 4px 8px; border-radius: 6px; font-weight:700;" onchange="setSpeed(this.value)">
+          <option value="0.5">0.5x (Chậm)</option>
+          <option value="1" selected>1.0x (Chuẩn)</option>
+          <option value="2">2.0x (Nhanh)</option>
+          <option value="4">4.0x (Siêu tốc)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 3: Dispatch Precedence & Delay -->
+    <div class="settings-subrow">
+      <div class="setting-item">
+        <span class="setting-label">🚗 Thứ tự xuất phát / Quyền ưu tiên:</span>
+        <div class="pills-radio">
+          <div class="pill-opt active" id="optBoth" onclick="setPrecedence('BOTH')">⚡ Đồng thời (Race)</div>
+          <div class="pill-opt" id="optBlue" onclick="setPrecedence('BLUE')">🔵 Xe Xanh (Stitch) trước</div>
+          <div class="pill-opt pink" id="optPink" onclick="setPrecedence('PINK')">🌸 Xe Hồng (Angel) trước</div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">⏱ Độ lệch xuất phát (Delay):</span>
+        <input type="range" id="sliderDelay" class="slider-control" min="0" max="2.5" step="0.2" value="0" oninput="updateDelayValue(this.value)" />
+        <span id="delayValueLabel" style="font-weight:700; width: 40px;">0.0s</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       SIMULATION CANVAS STAGE
+       ========================================================================== -->
+  <div class="stage-wrapper">
+    <div class="stage-hud">
+      <div class="hud-title">
+        <span>🌉 Hiện trường Cây Cầu Độc Đạo (Single-Lane Bridge)</span>
+        <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">[Bờ Tây: Stitch ➔ | 🚸 Cầu 1 Làn | ⬅ Angel :Bờ Đông]</span>
+      </div>
+      <div>
+        <span id="systemStatusBadge" class="hud-pill status-safe">HỆ THỐNG SẴN SÀNG</span>
+      </div>
+    </div>
+    <canvas id="simCanvas" width="1180" height="340"></canvas>
+  </div>
+
+  <!-- ==========================================================================
+       DASHBOARD CARDS: RAG GRAPH, COFFMAN CRITERIA, EXPLAINER LOG
+       ========================================================================== -->
+  <div class="dashboard-grid">
+    <!-- Card 1: Live Resource Allocation Graph (RAG) -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>📊</span> Đồ thị Phân bổ Tài nguyên (RAG)
+        </div>
+        <span style="font-size:11px; font-weight:700; color:var(--text-muted);" id="ragTypeLabel">2-Segment Graph</span>
+      </div>
+      <p style="font-size:12px;">Xanh liền: tài nguyên → xe (cấp phát). Đỏ đứt: xe → tài nguyên (yêu cầu).</p>
+      <div class="rag-container">
+        <!-- Dynamic SVG Graph -->
+        <svg id="ragSvg" class="rag-svg" viewBox="0 0 320 180">
+          <defs>
+            <marker id="arrowGreen" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+              <polygon points="0 0, 7 3.5, 0 7" fill="#10b981" />
+            </marker>
+            <marker id="arrowRed" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+              <polygon points="0 0, 7 3.5, 0 7" fill="#ef4444" />
+            </marker>
+          </defs>
+
+          <!-- Graph Elements will be dynamically updated by JS -->
+          <g id="ragEdgesGroup"></g>
+          <g id="ragNodesGroup"></g>
+        </svg>
+      </div>
+
+      <div class="resource-status-list" id="resourceStatusList">
+        <div class="resource-row">
+          <span>Phân đoạn Tây ($R_1$):</span>
+          <span class="res-badge res-free" id="badgeR1">TRỐNG</span>
+        </div>
+        <div class="resource-row">
+          <span>Phân đoạn Đông ($R_2$):</span>
+          <span class="res-badge res-free" id="badgeR2">TRỐNG</span>
+        </div>
+        <div class="resource-row" id="mutexRow" style="display:none;">
+          <span>Cơ chế Khóa Mutex:</span>
+          <span class="res-badge res-free" id="badgeMutex">MỞ (UNLOCKED)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Coffman Criteria & Deadlock Verification -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🔍</span> 4 Điều Kiện Coffman (1971)
+        </div>
+        <span id="deadlockIndicator" style="font-size:11px; font-weight:800; color:#10b981;">NO DEADLOCK</span>
+      </div>
+
+      <div class="coffman-list">
+        <div class="coffman-item" id="coffman1">
+          <div>
+            <span class="coffman-name">1. Mutual Exclusion (Loại trừ)</span>
+            <span class="coffman-sub">Mỗi phân đoạn cầu chỉ chứa tối đa 1 xe.</span>
+          </div>
+          <span class="coffman-flag flag-yes" id="flagC1">LUÔN CÓ</span>
+        </div>
+
+        <div class="coffman-item" id="coffman2">
+          <div>
+            <span class="coffman-name">2. Hold & Wait (Giữ & Chờ)</span>
+            <span class="coffman-sub">Xe giữ 1 đoạn và đòi chiếm thêm đoạn kế tiếp.</span>
+          </div>
+          <span class="coffman-flag flag-no" id="flagC2">CHƯA</span>
+        </div>
+
+        <div class="coffman-item" id="coffman3">
+          <div>
+            <span class="coffman-name">3. No Preemption (Không tước đoạt)</span>
+            <span class="coffman-sub">Không bên nào bị cưỡng chế lùi xe khỏi cầu.</span>
+          </div>
+          <span class="coffman-flag flag-yes" id="flagC3">ÁP DỤNG</span>
+        </div>
+
+        <div class="coffman-item" id="coffman4">
+          <div>
+            <span class="coffman-name">4. Circular Wait (Chờ vòng tròn)</span>
+            <span class="coffman-sub">Tồn tại chu trình phụ thuộc $Xe_A \leftrightarrow Xe_B$.</span>
+          </div>
+          <span class="coffman-flag flag-no" id="flagC4">KHÔNG</span>
+        </div>
+      </div>
+
+      <div style="margin-top:10px; font-size:12px; color:var(--text-muted); background:var(--bg-secondary); padding:8px 10px; border-radius:6px;" id="coffmanVerdict">
+        ℹ <strong>Ghi chú lý thuyết:</strong> Trong mô hình mỗi tài nguyên có một thể hiện này, deadlock được xác nhận bởi vòng chờ thực sự khi <strong>đồng thời cả 4 điều kiện trên</strong> cùng được thỏa mãn!
+      </div>
+    </div>
+
+    <!-- Card 3: Contextual Explainer & Event Log -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>📝</span> Giải Thích Ngữ Cảnh & Nhật Ký
+        </div>
+        <button class="btn btn-reset" style="padding:2px 8px; font-size:11px;" onclick="clearLogs()">Xóa log</button>
+      </div>
+
+      <div class="explainer-box" id="explainerText">
+        💡 <strong>Sẵn sàng:</strong> Bấm <strong>"Bắt đầu"</strong> để chạy tự động hoặc <strong>"Từng bước"</strong> để quan sát quá trình phân bổ tài nguyên theo từng sự kiện logic.
+      </div>
+
+      <div class="log-stream" id="logStream">
+        <div class="log-entry info">[0.00s] Hệ thống khởi tạo thành công. Sẵn sàng mô phỏng.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       EDUCATIONAL COMPARISON MATRIX
+       ========================================================================== -->
+  <div class="comparison-section">
+    <div class="comparison-title">
+      <span>⚖</span> Bảng So Sánh Chuyên Sâu: Chế Độ Deadlock vs Chế Độ Mutex
+    </div>
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th style="width: 22%;">Tiêu chí so sánh</th>
+          <th style="width: 39%;">Chế độ Bế Tắc (Deadlock Mode)</th>
+          <th style="width: 39%;">Chế độ Đồng Bộ Mutex (Mutex Mode)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Bản chất quản lý tài nguyên</strong></td>
+          <td>Cho phép các tiến trình vào phân đoạn cầu tự do, chiếm từng phần rồi mới xin phần tiếp theo (Incremental Allocation).</td>
+          <td>Toàn bộ cây cầu được xem là một <strong>Critical Section</strong> được bảo vệ bởi khóa nhị phân <code>Bridge_Mutex</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Phân biệt trạng thái Chờ</strong></td>
+          <td><span class="tag-danger">Bế tắc (Deadlock):</span> Hai xe đều đã đứng trên cầu, giữ một nửa cầu và chờ nửa kia. Không thể tự tiến triển.</td>
+          <td><span class="tag-safe">Chờ thông thường (Safe Wait):</span> Xe đến sau dừng ngoài vạch cầu, <strong>không chiếm giữ tài nguyên nào</strong> của cầu.</td>
+        </tr>
+        <tr>
+          <td><strong>Chu trình phụ thuộc (RAG)</strong></td>
+          <td>Tồn tại chu trình đóng: $P_A \rightarrow R_2 \rightarrow P_B \rightarrow R_1 \rightarrow P_A$.</td>
+          <td>Đồ thị hoàn toàn không có chu trình (Acyclic). Xe chờ chỉ xếp hàng trong hàng đợi <code>WaitQueue</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Giải pháp cứu vãn (Recovery)</strong></td>
+          <td>Phải can thiệp cưỡng chế: Phá vỡ điều kiện <em>No Preemption</em> (Buộc 1 xe lùi xe / Rollback để giải phóng tài nguyên).</td>
+          <td>Không cần cứu vãn vì Deadlock <strong>được ngăn chặn từ đầu (Prevention)</strong> thông qua loại trừ tương hỗ toàn phần.</td>
+        </tr>
+        <tr>
+          <td><strong>Ưu & Nhược điểm</strong></td>
+          <td>Tận dụng tối đa không gian nếu đi cùng chiều, nhưng cực kỳ rủi ro khi có dòng xe ngược chiều.</td>
+          <td>Đảm bảo an toàn 100%, không bao giờ kẹt xe, nhưng có thể giảm thông lượng nếu xe qua cầu chậm.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    <p>Dự án "Cây Cầu Độc Đạo — Deadlock & Mutex Simulator" • 100% Offline Vanilla JS/HTML5 Canvas • Thiết kế theo chuẩn Hệ Điều Hành</p>
+  </footer>
+</div>
+
+<!-- ==========================================================================
+     JAVASCRIPT SIMULATION ENGINE (CORE MODEL, ANIMATION & UI)
+     ========================================================================== -->
+<script>
+  /* --- 1. AUDIO SYNTHESIZER (NATIVE WEB AUDIO API - 100% OFFLINE) --- */
+  class SoundFX {
+    constructor() {
+      this.ctx = null;
+    }
+    init() {
+      if (!this.ctx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) this.ctx = new AudioContext();
+      }
+    }
+    playHorn() {
+      this.init();
+      if (!this.ctx) return;
+      try {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(380, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
+      } catch (e) {}
+    }
+    playAlarm() {
+      this.init();
+      if (!this.ctx) return;
+      try {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(900, this.ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(600, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.35);
+      } catch (e) {}
+    }
+    playReverseBeep() {
+      this.init();
+      if (!this.ctx) return;
+      try {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1100, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      } catch (e) {}
+    }
+    playLockClick() {
+      this.init();
+      if (!this.ctx) return;
+      try {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(220, this.ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      } catch (e) {}
+    }
+  }
+  const sfx = new SoundFX();
+
+  /* --- 2. CONFIGURATION & CONSTANTS --- */
+  const CANVAS_WIDTH = 1180;
+  const CANVAS_HEIGHT = 340;
+  const BRIDGE_Y = 185;
+  const BRIDGE_START_X = 260;
+  const BRIDGE_END_X = 920;
+  const BRIDGE_MID_X = (BRIDGE_START_X + BRIDGE_END_X) / 2; // 590
+  const CAR_WIDTH = 76;
+  const CAR_HEIGHT = 44;
+
+  // Car Start and Stop Coordinates
+  const POS_BAY_A = 90;              // Vạch chờ Bờ Tây
+  const POS_BAY_B = 1010;            // Vạch chờ Bờ Đông
+  const POS_DEST_A = 1070;           // Đích của Stitch (Bờ Đông)
+  const POS_DEST_B = 30;             // Đích của Angel (Bờ Tây)
+
+  const SEGMENT_1_RANGE = [BRIDGE_START_X, BRIDGE_MID_X]; // Tây
+  const SEGMENT_2_RANGE = [BRIDGE_MID_X, BRIDGE_END_X];   // Đông
+
+  /* --- 3. STATE DEFINITIONS --- */
+  const SimMode = {
+    DEADLOCK: 'DEADLOCK',
+    MUTEX: 'MUTEX'
+  };
+
+  const CarState = {
+    IDLE: 'IDLE',
+    WAITING_DELAY: 'WAITING_DELAY',
+    APPROACHING: 'APPROACHING',
+    WAITING_AT_BAY: 'WAITING_AT_BAY', // Chờ thông thường ngoài cầu
+    HOLDING_SEGMENT: 'HOLDING_SEGMENT',
+    WAITING_RESOURCE: 'WAITING_RESOURCE', // Chờ đoạn tiếp theo khi đã ở trên cầu
+    DEADLOCKED: 'DEADLOCKED',
+    ROLLING_BACK: 'ROLLING_BACK',     // Preemption Rollback
+    CROSSING: 'CROSSING',
+    COMPLETED: 'COMPLETED'
+  };
+
+  /* --- 4. DATA MODEL --- */
+  let currentMode = SimMode.DEADLOCK;
+  let simRunning = false;
+  let simPaused = false;
+  let simSpeed = 1.0;
+  let precedence = 'BOTH'; // 'BOTH' | 'BLUE' | 'PINK'
+  let delayOffset = 0.0;    // seconds
+  let simTime = 0;          // in seconds
+  let lastTimestamp = 0;
+  let animationFrameId = null;
+  let playbackGeneration = 0;
+  function stopPlayback() {
+    playbackGeneration++;
+    if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    lastTimestamp = 0;
+  }
+  function schedulePlayback() {
+    if (animationFrameId !== null || !simRunning || simPaused) return;
+    const generation = playbackGeneration;
+    animationFrameId = requestAnimationFrame(timestamp => {
+      if (generation !== playbackGeneration) return;
+      animationFrameId = null;
+      simulationLoop(timestamp);
+    });
+  }
+  let stepModeActive = false;
+
+  // --- Snapshot system for Next / Previous Step ---
+  let modeSnapshots = [];   // stack of saved states
+  let snapshotIndex = -1;   // current position in stack
+  const MAX_SNAPSHOTS = 60; // cap memory usage
+
+  // Car Entities
+  let carA = {
+    id: 'A',
+    name: 'Stitch (Xe Xanh)',
+    color: '#2a75d3',
+    x: POS_BAY_A,
+    y: BRIDGE_Y - 22,
+    targetX: POS_BAY_A,
+    speed: 130, // px per sec
+    state: CarState.IDLE,
+    heldSegment: null, // 1 | null
+    waitingFor: null,  // 2 | 'MUTEX' | null
+    preempted: false,
+    delayTimer: 0,
+    wheelAngle: 0,
+    bubble: null,
+    bubbleTimer: 0
+  };
+
+  let carB = {
+    id: 'B',
+    name: 'Angel (Xe Hồng)',
+    color: '#f06292',
+    x: POS_BAY_B,
+    y: BRIDGE_Y - 22,
+    targetX: POS_BAY_B,
+    speed: 130, // px per sec
+    state: CarState.IDLE,
+    heldSegment: null, // 2 | null
+    waitingFor: null,  // 1 | 'MUTEX' | null
+    preempted: false,
+    delayTimer: 0,
+    wheelAngle: 0,
+    bubble: null,
+    bubbleTimer: 0
+  };
+
+  // Resources
+  let resources = {
+    R1: { id: 'R1', name: 'Đoạn Tây (R1)', owner: null, waiting: [] },
+    R2: { id: 'R2', name: 'Đoạn Đông (R2)', owner: null, waiting: [] },
+    Mutex: { locked: false, owner: null, queue: [] }
+  };
+
+  // Coffman tracking
+  let coffman = {
+    mutualExclusion: true,
+    holdAndWait: false,
+    noPreemption: true,
+    circularWait: false
+  };
+
+  let isDeadlockOccurred = false;
+  let isPreemptionTriggered = false;
+
+  /* --- 5. CANVAS RENDERING ENGINE --- */
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function renderStage() {
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // 1. Sky & River Background
+    drawEnvironment();
+
+    // 2. The Bridge & Segments
+    drawBridge();
+
+    // 3. Traffic Lights & Mutex Lock Indicator
+    drawSignalsAndLocks();
+
+    // 4. Vehicles
+    drawCar(carA, 'EAST');
+    drawCar(carB, 'WEST');
+
+    // 5. Speech / Alert Bubbles
+    drawBubble(carA);
+    drawBubble(carB);
+  }
+
+  function drawEnvironment() {
+    // Water
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillRect(0, 110, CANVAS_WIDTH, 170);
+
+    // River waves animation
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 2;
+    const waveOffset = (simTime * 40) % 60;
+    for (let y = 135; y < 270; y += 28) {
+      ctx.beginPath();
+      for (let x = -60; x < CANVAS_WIDTH + 60; x += 60) {
+        ctx.moveTo(x + waveOffset, y);
+        ctx.quadraticCurveTo(x + 15 + waveOffset, y - 6, x + 30 + waveOffset, y);
+      }
+      ctx.stroke();
+    }
+
+    // River banks (West & East Land)
+    // West Bank
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.moveTo(0, 70);
+    ctx.lineTo(BRIDGE_START_X, 70);
+    ctx.lineTo(BRIDGE_START_X, 290);
+    ctx.lineTo(0, 290);
+    ctx.closePath();
+    ctx.fill();
+
+    // West Road
+    ctx.fillStyle = '#e2d3be';
+    ctx.fillRect(0, BRIDGE_Y - 26, BRIDGE_START_X, 52);
+    ctx.strokeStyle = '#d4c0a5';
+    ctx.strokeRect(0, BRIDGE_Y - 26, BRIDGE_START_X, 52);
+
+    // East Bank
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.moveTo(BRIDGE_END_X, 70);
+    ctx.lineTo(CANVAS_WIDTH, 70);
+    ctx.lineTo(CANVAS_WIDTH, 290);
+    ctx.lineTo(BRIDGE_END_X, 290);
+    ctx.closePath();
+    ctx.fill();
+
+    // East Road
+    ctx.fillStyle = '#e2d3be';
+    ctx.fillRect(BRIDGE_END_X, BRIDGE_Y - 26, CANVAS_WIDTH - BRIDGE_END_X, 52);
+    ctx.strokeStyle = '#d4c0a5';
+    ctx.strokeRect(BRIDGE_END_X, BRIDGE_Y - 26, CANVAS_WIDTH - BRIDGE_END_X, 52);
+
+    // Waiting Bay Lines
+    drawWaitingBay(POS_BAY_A, 'BỜ TÂY (Vạch chờ)');
+    drawWaitingBay(POS_BAY_B, 'BỜ ĐÔNG (Vạch chờ)');
+  }
+
+  function drawWaitingBay(x, label) {
+    ctx.save();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x + 35, BRIDGE_Y - 26);
+    ctx.lineTo(x + 35, BRIDGE_Y + 26);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#78350f';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x + 35, BRIDGE_Y + 44);
+    ctx.restore();
+  }
+
+  function drawBridge() {
+    const bridgeW = BRIDGE_END_X - BRIDGE_START_X;
+    
+    // Bridge shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(BRIDGE_START_X, BRIDGE_Y + 30, bridgeW, 14);
+
+    // Main bridge deck (Wood)
+    ctx.fillStyle = '#8b5a3e';
+    ctx.fillRect(BRIDGE_START_X, BRIDGE_Y - 25, bridgeW, 50);
+
+    // Wood planks vertical lines
+    ctx.strokeStyle = '#633d26';
+    ctx.lineWidth = 2;
+    for (let x = BRIDGE_START_X; x <= BRIDGE_END_X; x += 18) {
+      ctx.beginPath();
+      ctx.moveTo(x, BRIDGE_Y - 25);
+      ctx.lineTo(x, BRIDGE_Y + 25);
+      ctx.stroke();
+    }
+
+    // Bridge Guardrails
+    ctx.fillStyle = '#452311';
+    ctx.fillRect(BRIDGE_START_X, BRIDGE_Y - 27, bridgeW, 5);
+    ctx.fillRect(BRIDGE_START_X, BRIDGE_Y + 22, bridgeW, 5);
+
+    // Segment Dividing Line & Labels
+    if (currentMode === SimMode.DEADLOCK) {
+      // Middle boundary
+      ctx.strokeStyle = isDeadlockOccurred ? '#ef4444' : '#eab308';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.moveTo(BRIDGE_MID_X, BRIDGE_Y - 25);
+      ctx.lineTo(BRIDGE_MID_X, BRIDGE_Y + 25);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Section 1 Highlight (R1)
+      ctx.fillStyle = resources.R1.owner ? 'rgba(42, 117, 211, 0.15)' : 'rgba(255,255,255,0.06)';
+      ctx.fillRect(BRIDGE_START_X, BRIDGE_Y - 22, BRIDGE_MID_X - BRIDGE_START_X, 44);
+
+      // Section 2 Highlight (R2)
+      ctx.fillStyle = resources.R2.owner ? 'rgba(240, 98, 146, 0.15)' : 'rgba(255,255,255,0.06)';
+      ctx.fillRect(BRIDGE_MID_X, BRIDGE_Y - 22, BRIDGE_END_X - BRIDGE_MID_X, 44);
+
+      // Segment Labels
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      
+      // R1 label
+      ctx.fillStyle = resources.R1.owner ? '#1e40af' : '#452311';
+      ctx.fillText(`PHÂN ĐOẠN 1 (R1) ${resources.R1.owner ? '• ' + resources.R1.owner.id : ''}`, (BRIDGE_START_X + BRIDGE_MID_X)/2, BRIDGE_Y - 33);
+      
+      // R2 label
+      ctx.fillStyle = resources.R2.owner ? '#9d174d' : '#452311';
+      ctx.fillText(`PHÂN ĐOẠN 2 (R2) ${resources.R2.owner ? '• ' + resources.R2.owner.id : ''}`, (BRIDGE_MID_X + BRIDGE_END_X)/2, BRIDGE_Y - 33);
+    } else {
+      // Mutex Mode: Entire bridge is One Critical Section
+      ctx.fillStyle = resources.Mutex.locked ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255,255,255,0.06)';
+      ctx.fillRect(BRIDGE_START_X, BRIDGE_Y - 22, bridgeW, 44);
+
+      ctx.fillStyle = '#065f46';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`CRITICAL SECTION (MUTEX PROTECTED) • ${resources.Mutex.locked ? 'LOCKED BY ' + resources.Mutex.owner.name : 'FREE'}`, BRIDGE_MID_X, BRIDGE_Y - 33);
+    }
+  }
+
+  function drawSignalsAndLocks() {
+    // Left Signal Tower
+    drawTrafficLight(BRIDGE_START_X - 18, BRIDGE_Y - 45, getSignalColor('WEST'));
+    // Right Signal Tower
+    drawTrafficLight(BRIDGE_END_X + 10, BRIDGE_Y - 45, getSignalColor('EAST'));
+
+    // If Mutex Mode: Draw Big Floating Lock in Center
+    if (currentMode === SimMode.MUTEX) {
+      drawFloatingLock(BRIDGE_MID_X, BRIDGE_Y - 60, resources.Mutex.locked, resources.Mutex.owner);
+    }
+  }
+
+  function getSignalColor(direction) {
+    if (currentMode === SimMode.MUTEX) {
+      if (!resources.Mutex.locked) return '#22c55e'; // Green
+      if (direction === 'WEST' && resources.Mutex.owner === carA) return '#22c55e';
+      if (direction === 'EAST' && resources.Mutex.owner === carB) return '#22c55e';
+      return '#ef4444'; // Red
+    } else {
+      // Deadlock Mode
+      if (direction === 'WEST') {
+        return resources.R1.owner ? '#ef4444' : '#22c55e';
+      } else {
+        return resources.R2.owner ? '#ef4444' : '#22c55e';
+      }
+    }
+  }
+
+  function drawTrafficLight(x, y, color) {
+    ctx.save();
+    // Post
+    ctx.fillStyle = '#374151';
+    ctx.fillRect(x + 4, y + 20, 4, 30);
+    // Box
+    ctx.fillStyle = '#1f2937';
+    ctx.fillRect(x, y, 12, 22);
+    ctx.strokeStyle = '#4b5563';
+    ctx.strokeRect(x, y, 12, 22);
+    // Light bulb
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x + 6, y + 11, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Glow
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFloatingLock(x, y, isLocked, owner) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Badge Container
+    ctx.fillStyle = isLocked ? '#fef2f2' : '#f0fdf4';
+    ctx.strokeStyle = isLocked ? '#ef4444' : '#10b981';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-75, -20, 150, 40, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Lock Icon
+    ctx.fillStyle = isLocked ? '#ef4444' : '#10b981';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(isLocked ? '🔒' : '🔓', -65, 6);
+
+    // Text
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = isLocked ? '#991b1b' : '#065f46';
+    ctx.fillText(isLocked ? 'MUTEX: LOCKED' : 'MUTEX: UNLOCKED', -38, -2);
+    
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(isLocked ? `Giữ bởi: ${owner ? owner.name.split(' ')[0] : 'None'}` : 'Cầu đang tự do', -38, 12);
+
+    ctx.restore();
+  }
+
+  function drawCar(car, faceDirection) {
+    ctx.save();
+    ctx.translate(car.x, car.y);
+
+    const isStitch = car.id === 'A';
+    const bodyColor = car.color;
+    const isReversing = car.state === CarState.ROLLING_BACK;
+
+    // Reverse Hazard Flash
+    if (isReversing && Math.floor(simTime * 8) % 2 === 0) {
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+      ctx.beginPath();
+      ctx.arc(CAR_WIDTH / 2, CAR_HEIGHT / 2, 38, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Car Body Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(CAR_WIDTH / 2, CAR_HEIGHT - 2, 34, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main Chassis
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.roundRect(4, 12, CAR_WIDTH - 8, 24, 7);
+    ctx.fill();
+    ctx.strokeStyle = isStitch ? '#184d8c' : '#ad1457';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Cabin / Windshield
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath();
+    if (faceDirection === 'EAST') {
+      ctx.roundRect(14, 5, 42, 18, [6, 12, 2, 2]);
+    } else {
+      ctx.roundRect(20, 5, 42, 18, [12, 6, 2, 2]);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Driver Mascot Head
+    const headX = faceDirection === 'EAST' ? 38 : 34;
+    ctx.fillStyle = isStitch ? '#2a75d3' : '#f06292';
+    ctx.beginPath();
+    ctx.arc(headX, 13, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ears
+    ctx.fillStyle = isStitch ? '#184d8c' : '#ad1457';
+    ctx.beginPath();
+    ctx.ellipse(headX - 8, 10, 4, 7, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(headX + 8, 10, 4, 7, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wheels
+    drawWheel(16, CAR_HEIGHT - 6, car.wheelAngle);
+    drawWheel(CAR_WIDTH - 16, CAR_HEIGHT - 6, car.wheelAngle);
+
+    // Headlights
+    const lightX = faceDirection === 'EAST' ? CAR_WIDTH - 4 : 4;
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(lightX, 22, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Headlight Beam
+    if (car.state !== CarState.IDLE && car.state !== CarState.COMPLETED) {
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.2)';
+      ctx.beginPath();
+      if (faceDirection === 'EAST') {
+        ctx.moveTo(lightX, 20);
+        ctx.lineTo(lightX + 45, 12);
+        ctx.lineTo(lightX + 45, 32);
+      } else {
+        ctx.moveTo(lightX, 20);
+        ctx.lineTo(lightX - 45, 12);
+        ctx.lineTo(lightX - 45, 32);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Status Tag above car
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    if (car.state === CarState.DEADLOCKED) {
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('🛑 DEADLOCKED!', CAR_WIDTH / 2, -10);
+    } else if (car.state === CarState.ROLLING_BACK) {
+      ctx.fillStyle = '#dc2626';
+      ctx.fillText('⚠ PREEMPTED (LÙI)', CAR_WIDTH / 2, -10);
+    } else if (car.state === CarState.WAITING_AT_BAY) {
+      ctx.fillStyle = '#d97706';
+      ctx.fillText('⏳ Chờ ngoài cầu', CAR_WIDTH / 2, -10);
+    } else if (car.state === CarState.WAITING_RESOURCE) {
+      ctx.fillStyle = '#ea580c';
+      ctx.fillText('✋ Đợi R' + car.waitingFor, CAR_WIDTH / 2, -10);
+    }
+
+    ctx.restore();
+  }
+
+  function drawWheel(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBubble(car) {
+    if (!car.bubble || car.bubbleTimer <= 0) return;
+    ctx.save();
+    const bx = car.x + CAR_WIDTH / 2;
+    const by = car.y - 32;
+
+    ctx.font = 'bold 11px sans-serif';
+    const textWidth = ctx.measureText(car.bubble).width;
+    const bubbleW = textWidth + 18;
+    const bubbleH = 24;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(bx - bubbleW / 2, by - bubbleH, bubbleW, bubbleH, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pointer
+    ctx.beginPath();
+    ctx.moveTo(bx - 4, by);
+    ctx.lineTo(bx, by + 6);
+    ctx.lineTo(bx + 4, by);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.stroke();
+
+    // Bubble Text
+    ctx.fillStyle = '#0f172a';
+    ctx.textAlign = 'center';
+    ctx.fillText(car.bubble, bx, by - 8);
+
+    ctx.restore();
+  }
+
+  function setCarBubble(car, text, duration = 2.5) {
+    car.bubble = text;
+    car.bubbleTimer = duration;
+  }
+
+  /* --- 6. LOGGING & EXPLAINER UTILS --- */
+  const logStream = document.getElementById('logStream');
+  const explainerText = document.getElementById('explainerText');
+
+  function logAction(msg, type = 'info') {
+    const timeStr = simTime.toFixed(2);
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = `[${timeStr}s] ${msg}`;
+    logStream.prepend(entry);
+  }
+
+  function setExplainer(html) {
+    explainerText.innerHTML = html;
+  }
+
+  function clearLogs() {
+    logStream.innerHTML = '';
+    logAction('Nhật ký đã được làm mới.', 'info');
+  }
+
+  /* --- 7. SIMULATION ENGINE LOGIC (STATE TRANSITIONS) --- */
+  function updateSimulation(dt) {
+    simTime += dt;
+
+    // Decrement bubble timers
+    if (carA.bubbleTimer > 0) carA.bubbleTimer -= dt;
+    if (carB.bubbleTimer > 0) carB.bubbleTimer -= dt;
+
+    // Handle Start Delays based on Precedence
+    handleDelays(dt);
+
+    if (currentMode === SimMode.DEADLOCK) {
+      updateDeadlockMode(dt);
+    } else {
+      updateMutexMode(dt);
+    }
+
+    // Physical position interpolation & wheel rotation
+    updateCarPhysics(carA, dt, 'EAST');
+    updateCarPhysics(carB, dt, 'WEST');
+
+    // Update UI Indicators
+    updateUIElements();
+  }
+
+  function handleDelays(dt) {
+    if (carA.state === CarState.WAITING_DELAY) {
+      carA.delayTimer -= dt;
+      if (carA.delayTimer <= 0) {
+        carA.state = CarState.APPROACHING;
+        logAction('Xe Xanh (Stitch) bắt đầu xuất phát sau thời gian trễ.');
+      }
+    }
+    if (carB.state === CarState.WAITING_DELAY) {
+      carB.delayTimer -= dt;
+      if (carB.delayTimer <= 0) {
+        carB.state = CarState.APPROACHING;
+        logAction('Xe Hồng (Angel) bắt đầu xuất phát sau thời gian trễ.');
+      }
+    }
+  }
+
+  /* 7A. DEADLOCK MODE LOGIC */
+  function updateDeadlockMode(dt) {
+    // Retry requests when their single-instance resource becomes available.
+    for (const [car, entry, next] of [[carA, 1, 2], [carB, 2, 1]]) {
+      if (car.state === CarState.WAITING_AT_BAY && !car.preempted &&
+          resources['R' + entry].owner === null) car.state = CarState.APPROACHING;
+      if (car.state === CarState.WAITING_RESOURCE && !isPreemptionTriggered &&
+          resources['R' + next].owner === null) {
+        resources['R' + next].owner = car;
+        car.waitingFor = null;
+        car.state = CarState.CROSSING;
+      }
+    }
+    // Car A: West to East
+    if (carA.state === CarState.APPROACHING) {
+      // Move towards West entrance of Bridge (Segment 1)
+      if (carA.x + CAR_WIDTH >= BRIDGE_START_X) {
+        // Try to acquire R1
+        if (resources.R1.owner === null || resources.R1.owner === carA) {
+          resources.R1.owner = carA;
+          carA.heldSegment = 1;
+          carA.waitingFor = null;
+          carA.state = CarState.HOLDING_SEGMENT;
+          logAction('Xe Xanh chiếm Phân đoạn 1 (R1) thành công.', 'info');
+          sfx.playHorn();
+        } else {
+          // Normal wait at entrance
+          carA.state = CarState.WAITING_AT_BAY;
+          carA.waitingFor = currentMode === SimMode.MUTEX ? 'MUTEX' : 1;
+          logAction('Xe Xanh chờ ở Bờ Tây vì R1 đang bận.', 'warn');
+        }
+      }
+    } else if (carA.state === CarState.HOLDING_SEGMENT) {
+      // In Segment 1, moving towards boundary of Segment 2 (BRIDGE_MID_X)
+      if (carA.x + CAR_WIDTH >= BRIDGE_MID_X - 10) {
+        // Wants to enter Segment 2
+        carA.waitingFor = 2;
+        if (resources.R2.owner === null) {
+          // Free! Acquire R2
+          resources.R2.owner = carA;
+          carA.waitingFor = null;
+          carA.state = CarState.CROSSING;
+          logAction('Xe Xanh được cấp tiếp Phân đoạn 2 (R2) để qua cầu.', 'success');
+        } else if (resources.R2.owner === carB) {
+          // BLOCKED! Car B holds R2!
+          carA.state = CarState.WAITING_RESOURCE;
+          setCarBubble(carA, 'Này Angel, tớ đang giữ R1 đấy! Nhường đi!');
+          logAction('Xe Xanh dừng ở giữa cầu: Giữ R1 nhưng cần R2 (Đang bị Xe Hồng chiếm).', 'danger');
+        }
+      }
+    }
+
+    // Car B: East to West
+    if (carB.state === CarState.APPROACHING) {
+      if (carB.x <= BRIDGE_END_X) {
+        // Try to acquire R2
+        if (resources.R2.owner === null || resources.R2.owner === carB) {
+          resources.R2.owner = carB;
+          carB.heldSegment = 2;
+          carB.waitingFor = null;
+          carB.state = CarState.HOLDING_SEGMENT;
+          logAction('Xe Hồng chiếm Phân đoạn 2 (R2) thành công.', 'info');
+          sfx.playHorn();
+        } else {
+          carB.state = CarState.WAITING_AT_BAY;
+          carB.waitingFor = currentMode === SimMode.MUTEX ? 'MUTEX' : 2;
+          logAction('Xe Hồng chờ ở Bờ Đông vì R2 đang bận.', 'warn');
+        }
+      }
+    } else if (carB.state === CarState.HOLDING_SEGMENT) {
+      if (carB.x <= BRIDGE_MID_X + 10) {
+        carB.waitingFor = 1;
+        if (resources.R1.owner === null) {
+          resources.R1.owner = carB;
+          carB.waitingFor = null;
+          carB.state = CarState.CROSSING;
+          logAction('Xe Hồng được cấp tiếp Phân đoạn 1 (R1) để qua cầu.', 'success');
+        } else if (resources.R1.owner === carA) {
+          // BLOCKED! Car A holds R1!
+          carB.state = CarState.WAITING_RESOURCE;
+          setCarBubble(carB, 'Stitch lùi lại đi! Tớ đã giữ R2 trước rồi!');
+          logAction('Xe Hồng dừng ở giữa cầu: Giữ R2 nhưng cần R1 (Đang bị Xe Xanh chiếm).', 'danger');
+        }
+      }
+    }
+
+    // EVALUATE COFFMAN CONDITIONS
+    coffman.mutualExclusion = true; // By definition of 1 car per segment
+    coffman.holdAndWait = (carA.heldSegment !== null && carA.waitingFor !== null) ||
+                          (carB.heldSegment !== null && carB.waitingFor !== null);
+    coffman.noPreemption = !isPreemptionTriggered;
+    coffman.circularWait = findWaitCycle().length > 0;
+
+    // CHECK FOR DEADLOCK
+    if (coffman.circularWait) {
+      if (!isDeadlockOccurred) {
+        isDeadlockOccurred = true;
+        carA.state = CarState.DEADLOCKED;
+        carB.state = CarState.DEADLOCKED;
+        sfx.playAlarm();
+        logAction('🚨 DEADLOCK PHÁT HIỆN: Cả 4 điều kiện Coffman đều thỏa mãn! Chu trình khép kín: Xe A ➔ R2 ➔ Xe B ➔ R1 ➔ Xe A.', 'danger');
+        setExplainer('🛑 <strong>BẾ TẮC (DEADLOCK) ĐÃ XẢY RA!</strong><br/>Xe Xanh giữ R1 và chờ R2. Xe Hồng giữ R2 và chờ R1. Không xe nào có thể tự giải phóng tài nguyên. Bấm <strong>"GIẢI CỨU BẰNG PREEMPTION"</strong> để can thiệp bẻ gãy bế tắc!');
+      }
+    }
+
+    // Crossing completion
+    if (carA.state === CarState.CROSSING) {
+      // Once Car A passes R1 completely
+      if (carA.x > BRIDGE_MID_X && resources.R1.owner === carA) {
+        resources.R1.owner = null;
+        carA.heldSegment = 2;
+      }
+      // Reached East Destination
+      if (carA.x >= POS_DEST_A) {
+        carA.state = CarState.COMPLETED;
+        resources.R2.owner = null;
+        carA.heldSegment = null;
+        logAction('Xe Xanh đã hoàn thành hành trình qua Bờ Đông an toàn.', 'success');
+        checkCompletion();
+      }
+    }
+
+    if (carB.state === CarState.CROSSING) {
+      if (carB.x + CAR_WIDTH < BRIDGE_MID_X && resources.R2.owner === carB) {
+        resources.R2.owner = null;
+        carB.heldSegment = 1;
+      }
+      if (carB.x <= POS_DEST_B) {
+        carB.state = CarState.COMPLETED;
+        resources.R1.owner = null;
+        carB.heldSegment = null;
+        logAction('Xe Hồng đã hoàn thành hành trình qua Bờ Tây an toàn.', 'success');
+        checkCompletion();
+      }
+    }
+
+    // Rollback execution during Preemption
+    handleRollbackPhysics(dt);
+  }
+
+  /* 7B. PREEMPTION RESCUE LOGIC */
+  function triggerPreemptionRescue(victimChoice = 'AUTO') {
+    if (!isDeadlockOccurred) return;
+
+    isPreemptionTriggered = true;
+    sfx.playAlarm();
+
+    // Determine Victim (Xe bị tước quyền và buộc phải lùi)
+    let victim = carB;
+    let survivor = carA;
+
+    if (victimChoice === 'BLUE') {
+      victim = carA;
+      survivor = carB;
+    } else if (victimChoice === 'PINK') {
+      victim = carB;
+      survivor = carA;
+    } else {
+      // Auto Smart Victim Selection: Victim is Car B (Angel)
+      victim = carB;
+      survivor = carA;
+    }
+
+    logAction(`[PREEMPTION] Bắt đầu giải cứu: Chọn nạn nhân ${victim.name} để tước tài nguyên và Rollback.`, 'warn');
+    setExplainer(`🚑 <strong>TIẾN TRÌNH GIẢI CỨU (PREEMPTION RECOVERY):</strong><br/>
+      1. <strong>Victim Selection:</strong> Chọn ${victim.name}.<br/>
+      2. <strong>Resource Preemption:</strong> Cưỡng chế thu hồi phân đoạn cầu đang nắm giữ.<br/>
+      3. <strong>Rollback:</strong> Xe cài số lùi về vị trí an toàn ngoài cầu để ${survivor.name} đi qua.`);
+
+    // Keep the occupied segment reserved until the victim has left the bridge.
+    victim.state = CarState.ROLLING_BACK;
+    victim.waitingFor = null;
+    victim.preempted = true;
+    setCarBubble(victim, 'Đang bị tước quyền! Cài số lùi về bãi...', 4);
+
+    // The survivor waits until rollback is physically complete.
+    survivor.state = CarState.WAITING_RESOURCE;
+    // Break Deadlock flags
+    isDeadlockOccurred = false;
+    coffman.noPreemption = false; // The No Preemption condition is explicitly broken!
+    coffman.circularWait = false;
+    updateUIElements();
+    renderStage();
+  }
+
+  function handleRollbackPhysics(dt) {
+    const rollingVictim = [carA, carB].find(car => car.state === CarState.ROLLING_BACK);
+    // If Car B is rolling back to POS_BAY_B
+    if (carB.state === CarState.ROLLING_BACK) {
+      carB.targetX = POS_BAY_B + 10;
+      sfx.playReverseBeep();
+      if (carB.x >= POS_BAY_B) {
+        carB.state = CarState.WAITING_AT_BAY;
+        setCarBubble(carB, 'Đã lùi an toàn về Bờ Đông. Chờ Stitch đi qua.');
+        logAction('Xe Hồng đã hoàn tất Rollback về bãi chờ an toàn ngoài cầu.', 'info');
+      }
+    }
+
+    // If Car A is rolling back to POS_BAY_A
+    if (carA.state === CarState.ROLLING_BACK) {
+      carA.targetX = POS_BAY_A - 10;
+      sfx.playReverseBeep();
+      if (carA.x <= POS_BAY_A) {
+        carA.state = CarState.WAITING_AT_BAY;
+        setCarBubble(carA, 'Đã lùi an toàn về Bờ Tây. Chờ Angel đi qua.');
+        logAction('Xe Xanh đã hoàn tất Rollback về bãi chờ an toàn ngoài cầu.', 'info');
+      }
+    }
+
+    if (rollingVictim && rollingVictim.state === CarState.WAITING_AT_BAY) {
+      const survivor = rollingVictim === carA ? carB : carA;
+      resources[rollingVictim === carA ? 'R1' : 'R2'].owner = survivor;
+      rollingVictim.heldSegment = null;
+      survivor.waitingFor = null;
+      survivor.state = CarState.CROSSING;
+    }
+    // Starvation Prevention: Once survivor finishes, resume victim!
+    if (carB.preempted && carA.state === CarState.COMPLETED && carB.state === CarState.WAITING_AT_BAY) {
+      carB.preempted = false;
+      carB.heldSegment = 2;
+      carB.state = CarState.CROSSING;
+      resources.R2.owner = carB;
+      resources.R1.owner = carB;
+      setCarBubble(carB, 'Cầu đã trống hoàn toàn! Tớ xuất phát lại đây!');
+      logAction('[RESTART] Xe Hồng được tái kích hoạt (Starvation Prevention) và qua cầu an toàn.', 'success');
+    }
+    if (carA.preempted && carB.state === CarState.COMPLETED && carA.state === CarState.WAITING_AT_BAY) {
+      carA.preempted = false;
+      carA.heldSegment = 1;
+      carA.state = CarState.CROSSING;
+      resources.R1.owner = carA;
+      resources.R2.owner = carA;
+      setCarBubble(carA, 'Cầu đã trống hoàn toàn! Tớ xuất phát lại đây!');
+      logAction('[RESTART] Xe Xanh được tái kích hoạt (Starvation Prevention) và qua cầu an toàn.', 'success');
+    }
+  }
+
+  /* 7C. MUTEX MODE LOGIC */
+  function updateMutexMode(dt) {
+    // In Mutex Mode: Entire bridge is protected by resources.Mutex
+    // Car A
+    if (carA.state === CarState.APPROACHING) {
+      if (carA.x + CAR_WIDTH >= BRIDGE_START_X) {
+        // Wants to acquire Mutex
+        if (!resources.Mutex.locked) {
+          // Acquire Mutex!
+          acquireMutex(carA);
+          carA.state = CarState.CROSSING;
+          setCarBubble(carA, 'Đã lấy được Mutex! Cầu là của tớ!');
+          logAction('Xe Xanh acquire(Bridge_Mutex) thành công. Vào Critical Section.', 'success');
+        } else {
+          // Mutex already held by another car!
+          carA.state = CarState.WAITING_AT_BAY;
+          carA.waitingFor = currentMode === SimMode.MUTEX ? 'MUTEX' : 1;
+          if (!resources.Mutex.queue.includes(carA)) resources.Mutex.queue.push(carA);
+          setCarBubble(carA, 'Mutex đang khóa! Dừng chờ ở Bờ Tây.');
+          logAction('Xe Xanh thấy Mutex đang BẬN -> Dừng ở vạch chờ ngoài cầu (Không vào cầu!).', 'warn');
+        }
+      }
+    } else if (carA.state === CarState.CROSSING) {
+      if (carA.x >= POS_DEST_A) {
+        carA.state = CarState.COMPLETED;
+        releaseMutex(carA);
+        logAction('Xe Xanh qua hết cầu và gọi release(Bridge_Mutex).', 'info');
+        checkCompletion();
+      }
+    }
+
+    // Car B
+    if (carB.state === CarState.APPROACHING) {
+      if (carB.x <= BRIDGE_END_X) {
+        if (!resources.Mutex.locked) {
+          acquireMutex(carB);
+          carB.state = CarState.CROSSING;
+          setCarBubble(carB, 'Đã lấy được Mutex! Cầu là của tớ!');
+          logAction('Xe Hồng acquire(Bridge_Mutex) thành công. Vào Critical Section.', 'success');
+        } else {
+          carB.state = CarState.WAITING_AT_BAY;
+          carB.waitingFor = currentMode === SimMode.MUTEX ? 'MUTEX' : 2;
+          if (!resources.Mutex.queue.includes(carB)) resources.Mutex.queue.push(carB);
+          setCarBubble(carB, 'Mutex đang khóa! Dừng chờ ở Bờ Đông.');
+          logAction('Xe Hồng thấy Mutex đang BẬN -> Dừng ở vạch chờ ngoài cầu (Không vào cầu!).', 'warn');
+        }
+      }
+    } else if (carB.state === CarState.CROSSING) {
+      if (carB.x <= POS_DEST_B) {
+        carB.state = CarState.COMPLETED;
+        releaseMutex(carB);
+        logAction('Xe Hồng qua hết cầu và gọi release(Bridge_Mutex).', 'info');
+        checkCompletion();
+      }
+    }
+
+    // In Mutex mode:
+    coffman.mutualExclusion = true;
+    coffman.holdAndWait = false; // No car holds half the bridge while waiting for the other half!
+    coffman.noPreemption = true;
+    coffman.circularWait = false; // Zero circular wait
+  }
+
+  function acquireMutex(car) {
+    if (resources.Mutex.locked) return resources.Mutex.owner === car;
+    resources.Mutex.locked = true;
+    resources.Mutex.owner = car;
+    car.waitingFor = null;
+    sfx.playLockClick();
+    return true;
+  }
+
+  function releaseMutex(car) {
+    if (resources.Mutex.owner === car) {
+      resources.Mutex.locked = false;
+      resources.Mutex.owner = null;
+      sfx.playLockClick();
+
+      // Wake up next waiting car in queue
+      if (resources.Mutex.queue.length > 0) {
+        const nextCar = resources.Mutex.queue.shift();
+        logAction(`[WAKEUP] Đánh thức ${nextCar.name} từ hàng đợi WaitQueue.`, 'info');
+        acquireMutex(nextCar);
+        nextCar.state = CarState.CROSSING;
+        setCarBubble(nextCar, 'Mutex đã mở! Tới lượt tớ qua cầu!');
+      }
+    }
+  }
+
+  /* 7D. PHYSICS & MOVEMENT INTERPOLATION */
+  function updateCarPhysics(car, dt, direction) {
+    if (car.state === CarState.IDLE || car.state === CarState.WAITING_DELAY) return;
+    if (currentMode === SimMode.MUTEX && car.state === CarState.CROSSING && resources.Mutex.owner !== car) return;
+
+    let targetX = car.x;
+    const moveSpeed = car.speed;
+
+    if (direction === 'EAST') {
+      // Car A moving to right
+      if (car.state === CarState.APPROACHING) {
+        targetX = BRIDGE_START_X - CAR_WIDTH;
+      } else if (car.state === CarState.HOLDING_SEGMENT) {
+        targetX = BRIDGE_MID_X - CAR_WIDTH - 8;
+      } else if (car.state === CarState.CROSSING) {
+        targetX = POS_DEST_A;
+      } else if (car.state === CarState.ROLLING_BACK) {
+        targetX = POS_BAY_A;
+      }
+    } else {
+      // Car B moving to left
+      if (car.state === CarState.APPROACHING) {
+        targetX = BRIDGE_END_X;
+      } else if (car.state === CarState.HOLDING_SEGMENT) {
+        targetX = BRIDGE_MID_X + 8;
+      } else if (car.state === CarState.CROSSING) {
+        targetX = POS_DEST_B;
+      } else if (car.state === CarState.ROLLING_BACK) {
+        targetX = POS_BAY_B;
+      }
+    }
+
+    const previousX = car.x;
+    // Interpolate towards targetX
+    if (car.x !== targetX) {
+      const step = Math.sign(targetX - car.x) * moveSpeed * dt;
+      if (Math.abs(step) > Math.abs(targetX - car.x)) {
+        car.x = targetX;
+      } else {
+        car.x += step;
+      }
+      car.wheelAngle += (car.x - previousX) / 8;
+    }
+  }
+
+  function checkCompletion() {
+    if (carA.state === CarState.COMPLETED && carB.state === CarState.COMPLETED) {
+      setExplainer('🎉 <strong>MÔ PHỎNG HOÀN THÀNH AN TOÀN!</strong> Cả hai xe đều đã qua cầu thành công mà không có xung đột.');
+      document.getElementById('systemStatusBadge').textContent = 'HOÀN THÀNH AN TOÀN';
+      document.getElementById('systemStatusBadge').className = 'hud-pill status-safe';
+    }
+  }
+
+  /* --- 8. UI DASHBOARD & SVG RAG GRAPH CONTROLLER --- */
+  function updateUIElements() {
+    document.getElementById('ragTypeLabel').textContent = currentMode === SimMode.MUTEX ? 'Mutex Graph' : '2-Segment Graph';
+    for (const n of [1, 2]) resources['R' + n].waiting = [carA, carB].filter(car => car.waitingFor === n);
+    // 1. Status Badges
+    const badgeR1 = document.getElementById('badgeR1');
+    const badgeR2 = document.getElementById('badgeR2');
+    const badgeMutex = document.getElementById('badgeMutex');
+
+    if (resources.R1.owner) {
+      badgeR1.textContent = `GIỮ BỞI ${resources.R1.owner.id === 'A' ? 'STITCH' : 'ANGEL'}`;
+      badgeR1.className = resources.R1.owner.id === 'A' ? 'res-badge res-held-a' : 'res-badge res-held-b';
+    } else {
+      badgeR1.textContent = 'TRỐNG';
+      badgeR1.className = 'res-badge res-free';
+    }
+
+    if (resources.R2.owner) {
+      badgeR2.textContent = `GIỮ BỞI ${resources.R2.owner.id === 'A' ? 'STITCH' : 'ANGEL'}`;
+      badgeR2.className = resources.R2.owner.id === 'A' ? 'res-badge res-held-a' : 'res-badge res-held-b';
+    } else {
+      badgeR2.textContent = 'TRỐNG';
+      badgeR2.className = 'res-badge res-free';
+    }
+
+    if (resources.Mutex.locked) {
+      badgeMutex.textContent = `KHÓA BỞI ${resources.Mutex.owner ? resources.Mutex.owner.name.split(' ')[0] : ''}`;
+      badgeMutex.className = resources.Mutex.owner === carA ? 'res-badge res-held-a' : 'res-badge res-held-b';
+    } else {
+      badgeMutex.textContent = 'MỞ (UNLOCKED)';
+      badgeMutex.className = 'res-badge res-free';
+    }
+
+    // 2. Coffman Flags
+    const flagC1 = document.getElementById('flagC1');
+    const flagC2 = document.getElementById('flagC2');
+    const flagC3 = document.getElementById('flagC3');
+    const flagC4 = document.getElementById('flagC4');
+
+    flagC2.textContent = coffman.holdAndWait ? 'THỎA MÃN' : 'CHƯA';
+    flagC2.className = coffman.holdAndWait ? 'coffman-flag flag-yes' : 'coffman-flag flag-no';
+    document.getElementById('coffman2').className = coffman.holdAndWait ? 'coffman-item met' : 'coffman-item';
+
+    flagC3.textContent = coffman.noPreemption ? 'ÁP DỤNG' : 'BỊ PHÁ VỠ';
+    flagC3.className = coffman.noPreemption ? 'coffman-flag flag-yes' : 'coffman-flag flag-no';
+    document.getElementById('coffman3').className = !coffman.noPreemption ? 'coffman-item broken' : 'coffman-item';
+
+    flagC4.textContent = coffman.circularWait ? 'CÓ (CYCLE)' : 'KHÔNG';
+    flagC4.className = coffman.circularWait ? 'coffman-flag flag-yes' : 'coffman-flag flag-no';
+    document.getElementById('coffman4').className = coffman.circularWait ? 'coffman-item met' : 'coffman-item';
+
+    // 3. System HUD Badge & Emergency Button
+    const statusBadge = document.getElementById('systemStatusBadge');
+    const rescueBtn = document.getElementById('btnEmergencyRescue');
+    const deadlockIndicator = document.getElementById('deadlockIndicator');
+
+    if (isDeadlockOccurred) {
+      statusBadge.textContent = '🛑 PHÁT HIỆN DEADLOCK (BẾ TẮC)';
+      statusBadge.className = 'hud-pill status-deadlock';
+      rescueBtn.classList.add('visible');
+      deadlockIndicator.textContent = 'DEADLOCK DETECTED!';
+      deadlockIndicator.style.color = '#ef4444';
+    } else if ([carA, carB].some(car => car.state === CarState.WAITING_RESOURCE)) {
+      statusBadge.textContent = 'BLOCKED: CHỜ TÀI NGUYÊN, CHƯA CÓ VÒNG CHỜ';
+      statusBadge.className = 'hud-pill status-waiting';
+      rescueBtn.classList.remove('visible');
+      deadlockIndicator.textContent = 'BLOCKED / NO CYCLE';
+      deadlockIndicator.style.color = '#f59e0b';
+    } else if (carA.state === CarState.WAITING_AT_BAY || carB.state === CarState.WAITING_AT_BAY) {
+      statusBadge.textContent = '⏳ CHỜ AN TOÀN NGOÀI CẦU';
+      statusBadge.className = 'hud-pill status-waiting';
+      rescueBtn.classList.remove('visible');
+      deadlockIndicator.textContent = 'NORMAL WAIT (SAFE)';
+      deadlockIndicator.style.color = '#f59e0b';
+    } else {
+      statusBadge.textContent = [carA, carB].every(car => car.state === CarState.COMPLETED) ? 'HOÀN THÀNH AN TOÀN' : simTime === 0 ? 'HỆ THỐNG SẴN SÀNG' : 'ĐANG MÔ PHỎNG';
+      statusBadge.className = 'hud-pill status-safe';
+      rescueBtn.classList.remove('visible');
+      deadlockIndicator.textContent = 'NO DEADLOCK';
+      deadlockIndicator.style.color = '#10b981';
+    }
+
+    updateExplainer();
+    // 4. Update SVG Resource Allocation Graph (RAG)
+    updateRAGGraph();
+  }
+
+  // One graph is shared by detection, the diagram and contextual explanations.
+  function getRAGEdges() {
+    const edges = [];
+    const list = currentMode === SimMode.MUTEX ? [['MUTEX', resources.Mutex]] : [['R1', resources.R1], ['R2', resources.R2]];
+    for (const [id, resource] of list) {
+      if (resource.owner) edges.push({ from: id, to: 'P' + resource.owner.id, kind: 'Holding' });
+    }
+    for (const car of [carA, carB]) {
+      if (car.waitingFor !== null) edges.push({ from: 'P' + car.id,
+        to: car.waitingFor === 'MUTEX' ? 'MUTEX' : 'R' + car.waitingFor, kind: 'Request' });
+    }
+    return edges;
+  }
+
+  function findWaitCycle() {
+    const edges = getRAGEdges();
+    const visited = new Set();
+    const path = [];
+    function visit(node) {
+      const at = path.indexOf(node);
+      if (at >= 0) return [...path.slice(at), node];
+      if (visited.has(node)) return [];
+      path.push(node);
+      for (const edge of edges.filter(edge => edge.from === node)) {
+        const cycle = visit(edge.to);
+        if (cycle.length) return cycle;
+      }
+      path.pop();
+      visited.add(node);
+      return [];
+    }
+    for (const node of edges.map(edge => edge.from)) {
+      const cycle = visit(node);
+      if (cycle.length) return cycle;
+    }
+    return [];
+  }
+
+  function updateExplainer() {
+    const stateNames = {
+      IDLE: 'Sẵn sàng', WAITING_DELAY: 'Waiting: chờ đến lượt xuất phát',
+      APPROACHING: 'Đang tới đầu cầu', WAITING_AT_BAY: 'Waiting: chờ ngoài cầu',
+      HOLDING_SEGMENT: 'Đang đi trên phân đoạn đã được cấp',
+      WAITING_RESOURCE: 'Blocked: giữ tài nguyên và chờ tài nguyên tiếp theo',
+      DEADLOCKED: 'Deadlocked: thuộc vòng chờ tài nguyên',
+      ROLLING_BACK: 'Đang lùi theo lệnh giải cứu; giữ đoạn cầu đến khi ra bãi',
+      CROSSING: 'Đang qua cầu', COMPLETED: 'Đã hoàn thành, không giữ tài nguyên'
+    };
+    const lines = [carA, carB].map(car => {
+      const held = (currentMode === SimMode.MUTEX ? [['MUTEX', resources.Mutex]] : [['R1', resources.R1], ['R2', resources.R2]])
+        .filter(([, resource]) => resource.owner === car).map(([id]) => id);
+      const request = car.waitingFor === null ? 'không' : car.waitingFor === 'MUTEX' ? 'MUTEX' : 'R' + car.waitingFor;
+      return `<strong>Xe ${car.id}:</strong> ${stateNames[car.state]}. Giữ: ${held.join(', ') || 'không'}; yêu cầu: ${request}.`;
+    });
+    const cycle = findWaitCycle();
+    let verdict = cycle.length ? `<strong>Deadlock:</strong> ${cycle.join(' → ')}. Hai xe giữ tài nguyên của nhau; cần giải cứu.` :
+      'Chưa có vòng chờ: Waiting/Blocked hiện tại chưa phải Deadlock.';
+    if ([carA, carB].some(car => car.state === CarState.ROLLING_BACK)) verdict = 'Đang giải cứu: xe còn lại chờ xe bị buộc lùi ra bãi rồi mới nhận đoạn cầu.';
+    if ([carA, carB].every(car => car.state === CarState.COMPLETED)) verdict = 'Hoàn thành an toàn: các tài nguyên đã được giải phóng.';
+    const policy = currentMode === SimMode.MUTEX ? `Binary Mutex: chỉ một chủ khóa. Hàng đợi FIFO: ${resources.Mutex.queue.map(car => car.id).join(' → ') || 'trống'}.` : 'Mỗi phân đoạn R1/R2 có một thể hiện.';
+    setExplainer(lines.join('<br/>') + '<br/>' + verdict + '<br/>' + policy);
+  }
+
+  function updateRAGGraph() {
+    const nodesGroup = document.getElementById('ragNodesGroup');
+    const edgesGroup = document.getElementById('ragEdgesGroup');
+    nodesGroup.innerHTML = '';
+    edgesGroup.innerHTML = '';
+    const pos = currentMode === SimMode.DEADLOCK ? {
+      PA: { x: 60, y: 50 }, PB: { x: 260, y: 130 },
+      R1: { x: 160, y: 50 }, R2: { x: 160, y: 130 }
+    } : { PA: { x: 60, y: 90 }, PB: { x: 260, y: 90 }, MUTEX: { x: 160, y: 90 } };
+    drawSvgProcess(nodesGroup, pos.PA.x, pos.PA.y, 'P_A', carA.color);
+    drawSvgProcess(nodesGroup, pos.PB.x, pos.PB.y, 'P_B', carB.color);
+    for (const id of Object.keys(pos).filter(id => !id.startsWith('P'))) {
+      drawSvgResource(nodesGroup, pos[id].x, pos[id].y, id, !!(id === 'MUTEX' ? resources.Mutex.owner : resources[id].owner));
+    }
+    for (const edge of getRAGEdges()) {
+      const from = pos[edge.from], to = pos[edge.to];
+      if (!from || !to) continue;
+      const dx = to.x - from.x, dy = to.y - from.y;
+      const length = Math.hypot(dx, dy);
+      const shift = edge.kind === 'Request' ? -5 : 5;
+      drawSvgEdge(edgesGroup, from.x + dx / length * 21 - dy / length * shift,
+        from.y + dy / length * 21 + dx / length * shift,
+        to.x - dx / length * 23 - dy / length * shift,
+        to.y - dy / length * 23 + dx / length * shift,
+        edge.kind === 'Holding' ? '#10b981' : '#ef4444', edge.kind, edge.kind === 'Request');
+      edgesGroup.lastChild.setAttribute('data-from', edge.from);
+      edgesGroup.lastChild.setAttribute('data-to', edge.to);
+    }
+    if (isDeadlockOccurred && pos.R1) drawSvgCycleGlow(edgesGroup, pos);
+  }
+  function drawSvgProcess(group, x, y, label, color) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', '18');
+    circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', '#ffffff');
+    circle.setAttribute('stroke-width', '2');
+    group.appendChild(circle);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', y + 4);
+    text.setAttribute('fill', '#ffffff');
+    text.setAttribute('font-size', '10');
+    text.setAttribute('font-weight', 'bold');
+    text.setAttribute('text-anchor', 'middle');
+    text.textContent = label;
+    group.appendChild(text);
+  }
+
+  function drawSvgResource(group, x, y, label, isOccupied) {
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', x - 18);
+    rect.setAttribute('y', y - 18);
+    rect.setAttribute('width', '36');
+    rect.setAttribute('height', '36');
+    rect.setAttribute('rx', '6');
+    rect.setAttribute('fill', isOccupied ? '#fef3c7' : '#f1f5f9');
+    rect.setAttribute('stroke', isOccupied ? '#f59e0b' : '#94a3b8');
+    rect.setAttribute('stroke-width', '2');
+    group.appendChild(rect);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', y + 4);
+    text.setAttribute('fill', '#334155');
+    text.setAttribute('font-size', '10');
+    text.setAttribute('font-weight', 'bold');
+    text.setAttribute('text-anchor', 'middle');
+    text.textContent = label;
+    group.appendChild(text);
+  }
+
+  function drawSvgEdge(group, x1, y1, x2, y2, color, label, dashed = false) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', '2');
+    if (dashed) line.setAttribute('stroke-dasharray', '4,3');
+    line.setAttribute('marker-end', color === '#10b981' ? 'url(#arrowGreen)' : 'url(#arrowRed)');
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.textContent = label === 'Holding' ? 'Cấp phát: tài nguyên → xe' : 'Yêu cầu: xe → tài nguyên';
+    line.appendChild(title);
+    group.appendChild(line);
+  }
+
+  function drawSvgCycleGlow(group, pos) {
+    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    const points = `${pos.PA.x},${pos.PA.y} ${pos.R1.x},${pos.R1.y} ${pos.PB.x},${pos.PB.y} ${pos.R2.x},${pos.R2.y}`;
+    polygon.setAttribute('points', points);
+    polygon.setAttribute('fill', 'rgba(239, 68, 68, 0.12)');
+    polygon.setAttribute('stroke', '#ef4444');
+    polygon.setAttribute('stroke-width', '2');
+    polygon.setAttribute('stroke-dasharray', '5,3');
+    group.insertBefore(polygon, group.firstChild);
+  }
+
+  /* --- 9. PLAYBACK CONTROLS & EVENT LISTENERS --- */
+
+  /* --- MODE SELECTION (Deadlock <-> Mutex) --- */
+  function selectMode(mode) {
+    if (mode === currentMode) return;
+    simRunning = false;
+    simPaused = false;
+    stepModeActive = false;
+    isDeadlockOccurred = false;
+    isPreemptionTriggered = false;
+    currentMode = mode;
+    document.getElementById('optModeDeadlock').className = mode === 'DEADLOCK' ? 'pill-opt active' : 'pill-opt';
+    document.getElementById('optModeMutex').className = mode === 'MUTEX' ? 'pill-opt active' : 'pill-opt';
+    const r1Row = document.querySelector('.resource-row:nth-child(1)');
+    const r2Row = document.querySelector('.resource-row:nth-child(2)');
+    const mutexRow = document.getElementById('mutexRow');
+    if (mode === 'DEADLOCK') {
+      if (r1Row) r1Row.style.display = 'flex';
+      if (r2Row) r2Row.style.display = 'flex';
+      if (mutexRow) mutexRow.style.display = 'none';
+      document.getElementById('deadlockIndicator').textContent = 'NO DEADLOCK';
+      document.getElementById('deadlockIndicator').style.color = '#10b981';
+    } else {
+      if (r1Row) r1Row.style.display = 'none';
+      if (r2Row) r2Row.style.display = 'none';
+      if (mutexRow) mutexRow.style.display = 'flex';
+      document.getElementById('deadlockIndicator').textContent = 'MUTEX MODE';
+      document.getElementById('deadlockIndicator').style.color = '#10b981';
+    }
+    coffman.mutualExclusion = true;
+    coffman.holdAndWait = false;
+    coffman.noPreemption = true;
+    coffman.circularWait = false;
+    modeSnapshots = [];
+    snapshotIndex = -1;
+    resetSim();
+    logAction('Chuyển chế độ: ' + (mode === 'DEADLOCK' ? 'Bế tắc (Deadlock)' : 'Đồng bộ (Mutex)') + '.', 'info');
+  }
+
+  function captureSnapshot() {
+    const snap = {
+      simTime, currentMode, simRunning, simPaused, simSpeed, precedence, delayOffset,
+      isDeadlockOccurred, isPreemptionTriggered,
+      carA: {
+        x: carA.x, y: carA.y, targetX: carA.targetX, speed: carA.speed,
+        state: carA.state, heldSegment: carA.heldSegment,
+        waitingFor: carA.waitingFor, preempted: carA.preempted,
+        delayTimer: carA.delayTimer, wheelAngle: carA.wheelAngle,
+        bubble: carA.bubble, bubbleTimer: carA.bubbleTimer
+      },
+      carB: {
+        x: carB.x, y: carB.y, targetX: carB.targetX, speed: carB.speed,
+        state: carB.state, heldSegment: carB.heldSegment,
+        waitingFor: carB.waitingFor, preempted: carB.preempted,
+        delayTimer: carB.delayTimer, wheelAngle: carB.wheelAngle,
+        bubble: carB.bubble, bubbleTimer: carB.bubbleTimer
+      },
+      resources: {
+        R1: { owner: resources.R1 ? resources.R1.owner : null, waiting: resources.R1 ? [...resources.R1.waiting] : [] },
+        R2: { owner: resources.R2 ? resources.R2.owner : null, waiting: resources.R2 ? [...resources.R2.waiting] : [] },
+        Mutex: { locked: resources.Mutex.locked, owner: resources.Mutex.owner, queue: [...resources.Mutex.queue] }
+      },
+      logs: logStream.innerHTML, explainer: explainerText.innerHTML,
+      coffman: { ...coffman }
+    };
+    modeSnapshots.length = snapshotIndex + 1;
+    if (modeSnapshots.length >= MAX_SNAPSHOTS) { modeSnapshots.shift(); snapshotIndex--; }
+    modeSnapshots.push(snap);
+    snapshotIndex++;
+  }
+
+  function restoreSnapshot(snap) {
+    stopPlayback();
+    logStream.innerHTML = snap.logs;
+    explainerText.innerHTML = snap.explainer;
+    simTime = snap.simTime;
+    simSpeed = snap.simSpeed;
+    precedence = snap.precedence;
+    delayOffset = snap.delayOffset;
+    document.getElementById('selectSpeed').value = String(simSpeed);
+    document.getElementById('sliderDelay').value = String(delayOffset);
+    document.getElementById('delayValueLabel').textContent = delayOffset.toFixed(1) + 's';
+    for (const [id, value] of [['optBoth', 'BOTH'], ['optBlue', 'BLUE'], ['optPink', 'PINK']]) {
+      document.getElementById(id).className = 'pill-opt' + (precedence === value ? ' active' : '') + (value === 'PINK' ? ' pink' : '');
+    }
+    currentMode = snap.currentMode;
+    simRunning = snap.simRunning;
+    simPaused = snap.simPaused;
+    isDeadlockOccurred = snap.isDeadlockOccurred;
+    isPreemptionTriggered = snap.isPreemptionTriggered;
+    Object.assign(carA, snap.carA);
+    Object.assign(carB, snap.carB);
+    if (resources.R1) {
+      resources.R1.owner = snap.resources.R1.owner;
+      resources.R1.waiting = [...snap.resources.R1.waiting];
+    }
+    if (resources.R2) {
+      resources.R2.owner = snap.resources.R2.owner;
+      resources.R2.waiting = [...snap.resources.R2.waiting];
+    }
+    resources.Mutex.locked = snap.resources.Mutex.locked;
+    resources.Mutex.owner = snap.resources.Mutex.owner;
+    resources.Mutex.queue = [...snap.resources.Mutex.queue];
+    coffman.mutualExclusion = snap.coffman.mutualExclusion;
+    coffman.holdAndWait = snap.coffman.holdAndWait;
+    coffman.noPreemption = snap.coffman.noPreemption;
+    coffman.circularWait = snap.coffman.circularWait;
+    document.getElementById('optModeDeadlock').className = currentMode === 'DEADLOCK' ? 'pill-opt active' : 'pill-opt';
+    document.getElementById('optModeMutex').className = currentMode === 'MUTEX' ? 'pill-opt active' : 'pill-opt';
+    const r1Row = document.querySelector('.resource-row:nth-child(1)');
+    const r2Row = document.querySelector('.resource-row:nth-child(2)');
+    const mutexRow = document.getElementById('mutexRow');
+    if (currentMode === 'DEADLOCK') {
+      if (r1Row) r1Row.style.display = 'flex';
+      if (r2Row) r2Row.style.display = 'flex';
+      if (mutexRow) mutexRow.style.display = 'none';
+    } else {
+      if (r1Row) r1Row.style.display = 'none';
+      if (r2Row) r2Row.style.display = 'none';
+      if (mutexRow) mutexRow.style.display = 'flex';
+    }
+    updateUIElements();
+    renderStage();
+  }
+
+  function previousStep() {
+    if (snapshotIndex <= 0) {
+      logAction('Đã ở bước đầu tiên, không thể lùi lại.', 'warn');
+      return;
+    }
+    stopPlayback();
+    snapshotIndex--;
+    restoreSnapshot(modeSnapshots[snapshotIndex]);
+    simRunning = true;
+    simPaused = true;
+    stepModeActive = true;
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnPause').disabled = true;
+    document.getElementById('btnResume').disabled = false;
+    // Preserve the restored event log exactly.
+  }
+
+  function startSim() {
+    if (simRunning && !simPaused) return;
+
+    simRunning = true;
+    simPaused = false;
+    stepModeActive = false;
+
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnPause').disabled = false;
+    document.getElementById('btnResume').disabled = true;
+
+    // Apply Precedence & Delays
+    if (carA.state === CarState.IDLE) {
+      if (precedence === 'PINK') {
+        carB.state = CarState.APPROACHING;
+        carA.state = CarState.WAITING_DELAY;
+        carA.delayTimer = delayOffset > 0 ? delayOffset : 1.2;
+        logAction(`Xe Hồng ưu tiên xuất phát trước; Xe Xanh chờ ${carA.delayTimer.toFixed(1)}s.`);
+      } else if (precedence === 'BLUE') {
+        carA.state = CarState.APPROACHING;
+        carB.state = CarState.WAITING_DELAY;
+        carB.delayTimer = delayOffset > 0 ? delayOffset : 1.2;
+        logAction(`Xe Xanh ưu tiên xuất phát trước; Xe Hồng chờ ${carB.delayTimer.toFixed(1)}s.`);
+      } else {
+        // Both simultaneous
+        carA.state = CarState.APPROACHING;
+        carB.state = CarState.APPROACHING;
+        logAction('Hai xe xuất phát đồng thời hướng về phía cây cầu độc đạo.');
+      }
+    }
+
+    lastTimestamp = performance.now();
+    schedulePlayback();
+  }
+
+  function pauseSim() {
+    if (!simRunning || simPaused) return;
+    stopPlayback();
+    simPaused = true;
+    document.getElementById('btnPause').disabled = true;
+    document.getElementById('btnResume').disabled = false;
+    logAction('Mô phỏng tạm dừng bởi người dùng.');
+  }
+
+  function resumeSim() {
+    if (!simRunning || !simPaused) return;
+    if (carA.state === CarState.IDLE && carB.state === CarState.IDLE) {
+      startSim();
+      return;
+    }
+    simPaused = false;
+    document.getElementById('btnPause').disabled = false;
+    document.getElementById('btnResume').disabled = true;
+    lastTimestamp = performance.now();
+    logAction('Tiếp tục mô phỏng.');
+    schedulePlayback();
+  }
+
+  function logicalSignature() {
+    return JSON.stringify({
+      cars: [carA, carB].map(car => [car.state, car.waitingFor, car.preempted,
+        car.x + CAR_WIDTH > BRIDGE_START_X && car.x < BRIDGE_END_X]),
+      owners: [resources.R1.owner?.id, resources.R2.owner?.id, resources.Mutex.owner?.id],
+      queue: resources.Mutex.queue.map(car => car.id), deadlock: isDeadlockOccurred
+    });
+  }
+
+  function stepSim() {
+    stopPlayback();
+    const saved = modeSnapshots[snapshotIndex];
+    // Preserve the point reached in automatic playback before branching to steps.
+    if (!saved || saved.simTime !== simTime || saved.carA.state !== carA.state || saved.carB.state !== carB.state) captureSnapshot();
+    const initial = carA.state === CarState.IDLE && carB.state === CarState.IDLE;
+    if (initial) {
+      startSim();
+      pauseSim();
+    } else {
+      simRunning = true;
+      simPaused = true;
+    }
+    stepModeActive = true;
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnPause').disabled = true;
+    document.getElementById('btnResume').disabled = false;
+    if (!initial && (isDeadlockOccurred || [carA, carB].every(car => car.state === CarState.COMPLETED))) return;
+    const before = logicalSignature();
+    if (!initial) {
+      // Small deterministic ticks preserve physics; stop at the next model event.
+      for (let i = 0; i < 6000; i++) {
+        updateSimulation(1 / 60);
+        if (logicalSignature() !== before) break;
+      }
+    }
+    updateUIElements();
+    renderStage();
+    logAction('Sự kiện logic tiếp theo: xem trạng thái xe và cạnh RAG.', 'info');
+    captureSnapshot();
+  }
+  function resetSim() {
+    stopPlayback();
+    logStream.innerHTML = '';
+    setExplainer('Sẵn sàng: Bắt đầu hoặc chuyển tới sự kiện logic tiếp theo.');
+    simRunning = false;
+    simPaused = false;
+    simTime = 0;
+    stepModeActive = false;
+    isDeadlockOccurred = false;
+    isPreemptionTriggered = false;
+
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnPause').disabled = true;
+    document.getElementById('btnResume').disabled = true;
+    document.getElementById('btnEmergencyRescue').classList.remove('visible');
+
+    // Reset Cars
+    carA.x = POS_BAY_A;
+    carA.state = CarState.IDLE;
+    carA.heldSegment = null;
+    carA.waitingFor = null;
+    carA.preempted = false;
+    carA.bubble = null;
+
+    carB.x = POS_BAY_B;
+    carB.state = CarState.IDLE;
+    carB.heldSegment = null;
+    carB.waitingFor = null;
+    carB.preempted = false;
+    carB.bubble = null;
+
+    for (const car of [carA, carB]) {
+      car.targetX = car.x; car.delayTimer = 0; car.bubbleTimer = 0; car.wheelAngle = 0;
+    }
+    resources.R1.waiting = []; resources.R2.waiting = [];
+    // Reset Resources
+    resources.R1.owner = null;
+    resources.R2.owner = null;
+    resources.Mutex.locked = false;
+    resources.Mutex.owner = null;
+    resources.Mutex.queue = [];
+
+    coffman.mutualExclusion = true;
+    coffman.holdAndWait = false;
+    coffman.noPreemption = true;
+    coffman.circularWait = false;
+
+    document.getElementById('systemStatusBadge').textContent = 'HỆ THỐNG SẴN SÀNG';
+    document.getElementById('systemStatusBadge').className = 'hud-pill status-safe';
+
+    // Initialize snapshot stack with the initial state (step 0)
+    modeSnapshots = [];
+    snapshotIndex = -1;
+    renderStage();
+    updateUIElements();
+    logAction('Hệ thống đã Reset về trạng thái xuất phát ban đầu.', 'info');
+    captureSnapshot();
+  }
+
+  function setPrecedence(val) {
+    precedence = val;
+    document.getElementById('optBoth').className = val === 'BOTH' ? 'pill-opt active' : 'pill-opt';
+    document.getElementById('optBlue').className = val === 'BLUE' ? 'pill-opt active' : 'pill-opt';
+    document.getElementById('optPink').className = val === 'PINK' ? 'pill-opt active pink' : 'pill-opt';
+    logAction(`Cài đặt quyền ưu tiên: ${val === 'BOTH' ? 'Đồng thời' : val === 'BLUE' ? 'Xe Xanh trước' : 'Xe Hồng trước'}.`);
+    resetSim();
+  }
+
+  function updateDelayValue(val) {
+    delayOffset = parseFloat(val);
+    document.getElementById('delayValueLabel').textContent = delayOffset.toFixed(1) + 's';
+  }
+
+  function setSpeed(val) {
+    simSpeed = parseFloat(val);
+    logAction(`Tốc độ mô phỏng điều chỉnh thành ${simSpeed}x.`);
+  }
+
+  /* --- 10. MAIN ANIMATION LOOP (requestAnimationFrame) --- */
+  function simulationLoop(timestamp) {
+    if (!simRunning || simPaused) return;
+
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // cap max dt
+    lastTimestamp = timestamp;
+
+    updateSimulation(dt * simSpeed);
+    renderStage();
+
+    schedulePlayback();
+  }
+
+  // Initial Boot
+  window.addEventListener('load', () => {
+    resetSim();
+  });
+</script>
+
+</body>
+</html>
+
